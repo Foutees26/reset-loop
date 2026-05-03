@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { createBrowserUser, getBrowserUsers, getCurrentBrowserUser, getOrCreateBrowserUserId, setActiveBrowserUser, type BrowserUser } from '../../lib/browserUser';
 import { Bell, CheckCircle2, GripVertical, Pencil, Plus, Save, Trash2, UserPlus, Users, X } from 'lucide-react';
-import { energyLabels, energyTasks, type EnergyLevel } from '../../lib/resetData';
+import { energyLabels, energyTasks, expandedDefaultTasks, type EnergyLevel } from '../../lib/resetData';
 import { hasNativeLocalNotifications, requestReminderPermission, scheduleDailyReminder } from '../../lib/notifications';
 
 interface Profile {
@@ -107,7 +107,8 @@ export default function SettingsPage() {
         const seededTasks = await seedDefaultJobs(client, loadedTasks);
         setCustomTasks(seededTasks);
       } else {
-        setCustomTasks(loadedTasks);
+        const expandedTasks = await seedExpandedDefaultJobs(client, loadedTasks);
+        setCustomTasks(expandedTasks);
       }
       if (tasksError) setStatus('Unable to load your job list. Check the Supabase schema and connection.');
     }
@@ -136,7 +137,39 @@ export default function SettingsPage() {
 
     await client.from('users_profile').update({ jobs_seeded: true }).eq('id', userId);
     setProfile((prev) => (prev ? { ...prev, jobs_seeded: true } : prev));
+    window.localStorage.setItem(`reset_loop_expanded_default_jobs_${userId}`, 'true');
     return nextTasks;
+  }
+
+  async function seedExpandedDefaultJobs(client: NonNullable<typeof supabase>, currentTasks: CustomTask[]) {
+    if (currentTasks.length === 0) return currentTasks;
+
+    const storageKey = `reset_loop_expanded_default_jobs_${userId}`;
+    if (window.localStorage.getItem(storageKey) === 'true') return currentTasks;
+
+    const knownTaskNames = new Set(currentTasks.map((task) => task.task_text.trim().toLowerCase()));
+    const tasksToSeed = expandedDefaultTasks()
+      .filter((task) => !knownTaskNames.has(task.taskText.trim().toLowerCase()))
+      .map((task) => ({
+        user_id: userId,
+        task_text: task.taskText,
+        energy_level: task.energyLevel,
+      }));
+
+    if (tasksToSeed.length === 0) {
+      window.localStorage.setItem(storageKey, 'true');
+      return currentTasks;
+    }
+
+    const { data, error } = await client.from('custom_tasks').insert(tasksToSeed).select();
+    if (error) {
+      setStatus(error.message || 'Unable to add the expanded default jobs.');
+      return currentTasks;
+    }
+
+    window.localStorage.setItem(storageKey, 'true');
+    setStatus('Expanded job list added. Each energy level now has 20 default jobs.');
+    return [...((data ?? []) as CustomTask[]), ...currentTasks];
   }
 
   async function ensureProfile(client: NonNullable<typeof supabase>) {

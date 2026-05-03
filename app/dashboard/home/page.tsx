@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { BellRing, CheckCircle2, Flame, ShieldCheck, Shuffle } from 'lucide-react';
 import { format, parseISO, startOfWeek, subDays } from 'date-fns';
 import { supabase } from '../../../lib/supabaseClient';
-import { defaultTask, energyLabels, energyTasks, sampleDifferentTaskFromList, sampleTaskFromList, type EnergyLevel } from '../../../lib/resetData';
+import { defaultTask, energyLabels, energyTasks, expandedDefaultTasks, sampleDifferentTaskFromList, sampleTaskFromList, type EnergyLevel } from '../../../lib/resetData';
 import { getCurrentBrowserUser, getOrCreateBrowserUserId } from '../../../lib/browserUser';
 import CheckInModal from '../../../components/CheckInModal';
 
@@ -179,8 +179,10 @@ export default function HomePage() {
           .order('created_at', { ascending: false }),
       ]);
 
+      const loadedTasks = (taskItems ?? []) as CustomTask[];
+      const expandedTasks = await seedExpandedDefaultJobs(client, loadedTasks);
       setLogs((resetItems ?? []) as ResetLog[]);
-      setCustomTasks((taskItems ?? []) as CustomTask[]);
+      setCustomTasks(expandedTasks);
       if (logsError || tasksError) setMessage('Unable to load reset data. Check the Supabase schema and connection.');
       setLoading(false);
     }
@@ -397,6 +399,33 @@ export default function HomePage() {
     setRewardSoundEnabled(nextValue);
     window.localStorage.setItem('reset_loop_reward_sound', String(nextValue));
     setMessage(nextValue ? 'Reward sound on.' : 'Reward sound off.');
+  }
+
+  async function seedExpandedDefaultJobs(client: NonNullable<typeof supabase>, currentTasks: CustomTask[]) {
+    if (currentTasks.length === 0) return currentTasks;
+
+    const storageKey = `reset_loop_expanded_default_jobs_${userId}`;
+    if (window.localStorage.getItem(storageKey) === 'true') return currentTasks;
+
+    const knownTaskNames = new Set(currentTasks.map((task) => task.task_text.trim().toLowerCase()));
+    const tasksToSeed = expandedDefaultTasks()
+      .filter((task) => !knownTaskNames.has(task.taskText.trim().toLowerCase()))
+      .map((task) => ({
+        user_id: userId,
+        task_text: task.taskText,
+        energy_level: task.energyLevel,
+      }));
+
+    if (tasksToSeed.length === 0) {
+      window.localStorage.setItem(storageKey, 'true');
+      return currentTasks;
+    }
+
+    const { data, error } = await client.from('custom_tasks').insert(tasksToSeed).select();
+    if (error) return currentTasks;
+
+    window.localStorage.setItem(storageKey, 'true');
+    return [...((data ?? []) as CustomTask[]), ...currentTasks];
   }
 
   function acceptTask() {
