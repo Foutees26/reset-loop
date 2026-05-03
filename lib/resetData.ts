@@ -55,6 +55,19 @@ export function sampleDifferentTask(level: EnergyLevel, extraTasks: string[], cu
   return nextOptions[index];
 }
 
+export function sampleTaskFromList(tasks: string[], fallbackLevel: EnergyLevel) {
+  const options = tasks.length > 0 ? tasks : energyTasks[fallbackLevel];
+  const index = Math.floor(Math.random() * options.length);
+  return options[index];
+}
+
+export function sampleDifferentTaskFromList(tasks: string[], fallbackLevel: EnergyLevel, currentTask: string) {
+  const options = Array.from(new Set(tasks.length > 0 ? tasks : energyTasks[fallbackLevel]));
+  const nextOptions = options.length > 1 ? options.filter((task) => task !== currentTask) : options;
+  const index = Math.floor(Math.random() * nextOptions.length);
+  return nextOptions[index];
+}
+
 export function defaultTask(level: EnergyLevel) {
   return energyTasks[level][0];
 }

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { BellRing, Sparkles, CheckCircle2, ShieldCheck, PartyPopper, Shuffle } from 'lucide-react';
 import { format, parseISO, startOfWeek, subDays } from 'date-fns';
 import { supabase } from '../../../lib/supabaseClient';
-import { defaultTask, energyLabels, sampleDifferentTask, sampleFromTasks, type EnergyLevel } from '../../../lib/resetData';
+import { defaultTask, energyLabels, energyTasks, sampleDifferentTaskFromList, sampleTaskFromList, type EnergyLevel } from '../../../lib/resetData';
 import { getOrCreateBrowserUserId } from '../../../lib/browserUser';
 import CheckInModal from '../../../components/CheckInModal';
 
@@ -200,17 +200,21 @@ export default function HomePage() {
   }).length;
 
   const customSuggestions = useMemo(
-    () => customTasks
-      .filter((item) => item.energy_level === selectedEnergy)
-      .map((item) => item.task_text),
+    () => {
+      const customTasksForEnergy = customTasks
+        .filter((item) => item.energy_level === selectedEnergy)
+        .map((item) => item.task_text);
+      return customTasks.length > 0 ? customTasksForEnergy : energyTasks[selectedEnergy];
+    },
     [customTasks, selectedEnergy],
   );
 
   function makeTask(level: EnergyLevel) {
-    const extraTasks = customTasks
+    const customTasksForEnergy = customTasks
       .filter((item) => item.energy_level === level)
       .map((item) => item.task_text);
-    const nextTask = sampleFromTasks(level, extraTasks);
+    const availableTasks = customTasks.length > 0 ? customTasksForEnergy : energyTasks[level];
+    const nextTask = sampleTaskFromList(availableTasks, level);
     setTaskText(nextTask);
   }
 
@@ -220,7 +224,7 @@ export default function HomePage() {
   }
 
   function shuffleTask() {
-    const nextTask = sampleDifferentTask(selectedEnergy, customSuggestions, taskText);
+    const nextTask = sampleDifferentTaskFromList(customSuggestions, selectedEnergy, taskText);
     setTaskText(nextTask);
     setMessage('Shuffled. Pick the job that fits right now.');
   }
@@ -269,7 +273,7 @@ export default function HomePage() {
       return;
     }
 
-    const entryText = usedFreeze ? 'Use a reset freeze for today' : taskText || sampleFromTasks(selectedEnergy, customSuggestions);
+    const entryText = usedFreeze ? 'Use a reset freeze for today' : taskText || sampleTaskFromList(customSuggestions, selectedEnergy);
     const { data: savedReset, error } = await client.from('reset_logs').insert({
       user_id: userId,
       task_text: entryText,
@@ -301,7 +305,7 @@ export default function HomePage() {
         .limit(200);
       setLogs((resetItems ?? []) as ResetLog[]);
       if (!usedFreeze) {
-        setTaskText(sampleFromTasks(selectedEnergy, customSuggestions));
+        setTaskText(sampleTaskFromList(customSuggestions, selectedEnergy));
       }
     } else {
       setMessage(error.message || 'Unable to save your reset. Please check the Supabase connection and try again.');
@@ -345,11 +349,15 @@ export default function HomePage() {
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Reset Loop</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-950">Your daily reset</h1>
-            <p className="mt-3 text-sm font-medium text-slate-600">{quote}</p>
           </div>
           <div className="rounded-3xl bg-primarySoft px-4 py-3 text-primary">
             <BellRing className="h-6 w-6" />
           </div>
+        </div>
+
+        <div className="mt-5 rounded-[28px] border border-primary/20 bg-primarySoft p-4 text-primary shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary/80">Today&apos;s nudge</p>
+          <p className="mt-2 text-2xl font-semibold leading-tight text-primary">{quote}</p>
         </div>
 
         <div className={`mt-5 space-y-3 rounded-3xl bg-slate-50 p-4 transition ${celebrating ? 'streak-pop ring-2 ring-positive/40' : ''}`}>

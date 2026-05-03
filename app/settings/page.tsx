@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { getOrCreateBrowserUserId } from '../../lib/browserUser';
-import { Bell, CheckCircle2, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { Bell, CheckCircle2, GripVertical, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { energyLabels, energyTasks, type EnergyLevel } from '../../lib/resetData';
 
 interface Profile {
   id: string;
   display_name: string;
   reminder_time: string | null;
+  jobs_seeded?: boolean;
 }
 
 interface CustomTask {
@@ -30,20 +31,19 @@ export default function SettingsPage() {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskText, setEditingTaskText] = useState('');
   const [editingTaskEnergy, setEditingTaskEnergy] = useState<EnergyLevel>('low');
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [status, setStatus] = useState('');
 
   const normalizedNewTask = newTaskText.trim().toLowerCase();
   const normalizedEditingTask = editingTaskText.trim().toLowerCase();
   const allKnownTaskNames = useMemo(
     () => new Set([
-      ...Object.values(energyTasks).flat(),
       ...customTasks.map((task) => task.task_text),
     ].map((task) => task.trim().toLowerCase())),
     [customTasks],
   );
   const editableKnownTaskNames = useMemo(
     () => new Set([
-      ...Object.values(energyTasks).flat(),
       ...customTasks
         .filter((task) => task.id !== editingTaskId)
         .map((task) => task.task_text),
@@ -69,7 +69,7 @@ export default function SettingsPage() {
       } else if (error) {
         const { data: created, error: createError } = await client
           .from('users_profile')
-          .insert({ id: userId, display_name: 'Friend', reminder_time: null })
+          .insert({ id: userId, display_name: 'Friend', reminder_time: null, jobs_seeded: false })
           .select()
           .single();
         if (created) {
@@ -85,11 +85,45 @@ export default function SettingsPage() {
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-      setCustomTasks((tasks ?? []) as CustomTask[]);
+      const loadedTasks = (tasks ?? []) as CustomTask[];
+      const loadedProfile = (data ?? profile) as Profile | null;
+      const shouldSeedDefaultJobs = loadedTasks.length === 0 || loadedProfile?.jobs_seeded === false;
+
+      if (shouldSeedDefaultJobs) {
+        const seededTasks = await seedDefaultJobs(client, loadedTasks);
+        setCustomTasks(seededTasks);
+      } else {
+        setCustomTasks(loadedTasks);
+      }
       if (tasksError) setStatus('Unable to load your job list. Check the Supabase schema and connection.');
     }
     loadProfile();
   }, [userId]);
+
+  async function seedDefaultJobs(client: NonNullable<typeof supabase>, currentTasks: CustomTask[]) {
+    const knownTaskNames = new Set(currentTasks.map((task) => task.task_text.trim().toLowerCase()));
+    const tasksToSeed = (Object.entries(energyTasks) as [EnergyLevel, string[]][])
+      .flatMap(([energyLevel, tasks]) => tasks.map((taskText) => ({
+        user_id: userId,
+        task_text: taskText,
+        energy_level: energyLevel,
+      })))
+      .filter((task) => !knownTaskNames.has(task.task_text.trim().toLowerCase()));
+
+    let nextTasks = currentTasks;
+    if (tasksToSeed.length > 0) {
+      const { data, error } = await client.from('custom_tasks').insert(tasksToSeed).select();
+      if (error) {
+        setStatus(error.message || 'Unable to seed your editable job list.');
+        return currentTasks;
+      }
+      nextTasks = [...((data ?? []) as CustomTask[]), ...currentTasks];
+    }
+
+    await client.from('users_profile').update({ jobs_seeded: true }).eq('id', userId);
+    setProfile((prev) => (prev ? { ...prev, jobs_seeded: true } : prev));
+    return nextTasks;
+  }
 
   async function ensureProfile(client: NonNullable<typeof supabase>) {
     if (profile) return true;
@@ -102,7 +136,7 @@ export default function SettingsPage() {
 
     const { data: created, error } = await client
       .from('users_profile')
-      .insert({ id: userId, display_name: 'Friend', reminder_time: null })
+      .insert({ id: userId, display_name: 'Friend', reminder_time: null, jobs_seeded: false })
       .select()
       .single();
     if (created) {
@@ -224,6 +258,36 @@ export default function SettingsPage() {
     setStatus('Job updated.');
   }
 
+  async function moveTaskToEnergy(taskId: string, energyLevel: EnergyLevel) {
+    const task = customTasks.find((item) => item.id === taskId);
+    if (!task || task.energy_level === energyLevel || !supabase) {
+      setDraggingTaskId(null);
+      return;
+    }
+
+    const client = supabase;
+    const { data, error } = await client
+      .from('custom_tasks')
+      .update({ energy_level: energyLevel })
+      .eq('id', taskId)
+      .select()
+      .single();
+
+    if (error) {
+      setStatus(error.message || 'Unable to move job. Please try again.');
+      setDraggingTaskId(null);
+      return;
+    }
+
+    if (data) {
+      setCustomTasks((currentTasks) => currentTasks.map((currentTask) => (
+        currentTask.id === taskId ? data as CustomTask : currentTask
+      )));
+    }
+    setDraggingTaskId(null);
+    setStatus(`Moved job to ${energyLabels[energyLevel]} energy.`);
+  }
+
   if (!supabase) {
     return (
       <div className="space-y-6 pb-10">
@@ -284,7 +348,7 @@ export default function SettingsPage() {
         <div className="mb-4">
           <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Jobs</p>
           <h2 className="mt-1 text-xl font-semibold text-slate-950">Suggestion list</h2>
-          <p className="mt-2 text-sm text-slate-600">Add jobs you actually do. The full list is shown below so duplicates are easier to spot.</p>
+          <p className="mt-2 text-sm text-slate-600">Edit any job, delete jobs you do not want, or drag a job into the energy level that fits you.</p>
         </div>
 
         <div className="space-y-3">
@@ -330,22 +394,33 @@ export default function SettingsPage() {
             const customTasksForLevel = customTasks.filter((task) => task.energy_level === level);
 
             return (
-              <div key={level} className="rounded-3xl bg-slate-50 p-4">
+              <div
+                key={level}
+                className={`rounded-3xl bg-slate-50 p-4 transition ${draggingTaskId ? 'ring-2 ring-primary/20' : ''}`}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (draggingTaskId) moveTaskToEnergy(draggingTaskId, level);
+                }}
+              >
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h3 className="text-base font-semibold text-slate-950">{energyLabels[level]} energy</h3>
                   <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm">
-                    {energyTasks[level].length + customTasksForLevel.length} jobs
+                    {customTasksForLevel.length} jobs
                   </span>
                 </div>
                 <div className="space-y-2">
-                  {energyTasks[level].map((task) => (
-                    <div key={task} className="flex items-center justify-between gap-3 rounded-3xl bg-white p-3">
-                      <p className="text-sm font-semibold text-slate-900">{task}</p>
-                      <span className="rounded-full bg-primarySoft px-3 py-1 text-xs font-semibold text-primary">Default</span>
-                    </div>
-                  ))}
+                  {customTasksForLevel.length === 0 && (
+                    <p className="rounded-3xl bg-white p-3 text-sm text-slate-600">Drop jobs here to use them as {energyLabels[level].toLowerCase()} energy suggestions.</p>
+                  )}
                   {customTasksForLevel.map((task) => (
-                    <div key={task.id} className="flex items-center justify-between gap-3 rounded-3xl bg-white p-3">
+                    <div
+                      key={task.id}
+                      className="flex items-center justify-between gap-3 rounded-3xl bg-white p-3"
+                      draggable={editingTaskId !== task.id}
+                      onDragStart={() => setDraggingTaskId(task.id)}
+                      onDragEnd={() => setDraggingTaskId(null)}
+                    >
                       {editingTaskId === task.id ? (
                         <div className="w-full space-y-3">
                           <input
@@ -397,9 +472,12 @@ export default function SettingsPage() {
                         <>
                           <div>
                             <p className="text-sm font-semibold text-slate-900">{task.task_text}</p>
-                            <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">Custom</p>
+                            <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">Editable job</p>
                           </div>
                           <div className="flex items-center gap-2">
+                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-400" aria-hidden="true">
+                              <GripVertical className="h-4 w-4" />
+                            </span>
                             <button
                               type="button"
                               onClick={() => startEditingTask(task)}

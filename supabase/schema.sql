@@ -4,8 +4,12 @@ create table if not exists users_profile (
   id uuid primary key,
   display_name text not null,
   reminder_time text,
+  jobs_seeded boolean default false not null,
   created_at timestamp with time zone default now() not null
 );
+
+alter table users_profile
+  add column if not exists jobs_seeded boolean default false not null;
 
 create table if not exists reset_logs (
   id uuid primary key default gen_random_uuid(),
