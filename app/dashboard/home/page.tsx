@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { BellRing, Sparkles, CheckCircle2, ShieldCheck, PartyPopper } from 'lucide-react';
 import { format, parseISO, startOfWeek, subDays } from 'date-fns';
 import { supabase } from '../../../lib/supabaseClient';
-import { defaultTask, energyLabels, sampleTask, type EnergyLevel } from '../../../lib/resetData';
+import { defaultTask, energyLabels, sampleFromTasks, type EnergyLevel } from '../../../lib/resetData';
 import { getOrCreateBrowserUserId } from '../../../lib/browserUser';
 import CheckInModal from '../../../components/CheckInModal';
 
@@ -24,6 +24,14 @@ interface ResetLog {
   used_freeze: boolean;
 }
 
+interface CustomTask {
+  id: string;
+  user_id: string;
+  task_text: string;
+  energy_level: EnergyLevel;
+  created_at: string;
+}
+
 const maxRemindersPerDay = 2;
 const reminderMessages = [
   {
@@ -40,6 +48,7 @@ export default function HomePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userId, setUserId] = useState<string>('');
   const [logs, setLogs] = useState<ResetLog[]>([]);
+  const [customTasks, setCustomTasks] = useState<CustomTask[]>([]);
   const [selectedEnergy, setSelectedEnergy] = useState<EnergyLevel>('low');
   const [taskText, setTaskText] = useState<string>(() => defaultTask('low'));
   const [loading, setLoading] = useState(false);
@@ -78,15 +87,23 @@ export default function HomePage() {
         setProfile(existingProfile);
       }
 
-      const { data: resetItems, error: logsError } = await client
-        .from('reset_logs')
-        .select('*')
-        .eq('user_id', userId)
-        .order('completed_at', { ascending: false })
-        .limit(200);
+      const [{ data: resetItems, error: logsError }, { data: taskItems, error: tasksError }] = await Promise.all([
+        client
+          .from('reset_logs')
+          .select('*')
+          .eq('user_id', userId)
+          .order('completed_at', { ascending: false })
+          .limit(200),
+        client
+          .from('custom_tasks')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false }),
+      ]);
 
       setLogs((resetItems ?? []) as ResetLog[]);
-      if (logsError) setMessage('Unable to load reset history. Check the Supabase schema and connection.');
+      setCustomTasks((taskItems ?? []) as CustomTask[]);
+      if (logsError || tasksError) setMessage('Unable to load reset data. Check the Supabase schema and connection.');
       setLoading(false);
     }
 
@@ -136,6 +153,10 @@ export default function HomePage() {
   }, [logs]);
 
   const completedToday = datesWithLogs.has(todayKey);
+  const completedJobsToday = useMemo(
+    () => logs.filter((log) => !log.used_freeze && format(parseISO(log.completed_at), 'yyyy-MM-dd') === todayKey).length,
+    [logs, todayKey],
+  );
 
   const streak = useMemo(() => {
     let count = 0;
@@ -164,8 +185,18 @@ export default function HomePage() {
     );
   }).length;
 
+  const customSuggestions = useMemo(
+    () => customTasks
+      .filter((item) => item.energy_level === selectedEnergy)
+      .map((item) => item.task_text),
+    [customTasks, selectedEnergy],
+  );
+
   function makeTask(level: EnergyLevel) {
-    const nextTask = sampleTask(level);
+    const extraTasks = customTasks
+      .filter((item) => item.energy_level === level)
+      .map((item) => item.task_text);
+    const nextTask = sampleFromTasks(level, extraTasks);
     setTaskText(nextTask);
   }
 
@@ -207,7 +238,8 @@ export default function HomePage() {
   }
 
   async function saveReset(usedFreeze = false) {
-    if (!userId || loading || completedToday || !supabase) return;
+    if (!userId || loading || !supabase) return;
+    if (usedFreeze && completedToday) return;
     const client = supabase;
     setLoading(true);
     setMessage(usedFreeze ? 'Saving your pause day...' : 'Saving your reset...');
@@ -217,7 +249,7 @@ export default function HomePage() {
       return;
     }
 
-    const entryText = usedFreeze ? 'Use a reset freeze for today' : taskText || sampleTask(selectedEnergy);
+    const entryText = usedFreeze ? 'Use a reset freeze for today' : taskText || sampleFromTasks(selectedEnergy, customSuggestions);
     const { data: savedReset, error } = await client.from('reset_logs').insert({
       user_id: userId,
       task_text: entryText,
@@ -230,7 +262,9 @@ export default function HomePage() {
       setMessage(
         usedFreeze
           ? 'Nice choice. Your streak is protected while you rest today.'
-          : 'Reset complete. Your streak just grew - nice work.',
+          : completedJobsToday > 0
+            ? 'Another job logged. Good momentum, still gentle.'
+            : 'Reset complete. Your streak just grew - nice work.',
       );
       if (savedReset) {
         setLogs((currentLogs) => [savedReset as ResetLog, ...currentLogs]);
@@ -247,7 +281,7 @@ export default function HomePage() {
         .limit(200);
       setLogs((resetItems ?? []) as ResetLog[]);
       if (!usedFreeze) {
-        setTaskText(sampleTask(selectedEnergy));
+        setTaskText(sampleFromTasks(selectedEnergy, customSuggestions));
       }
     } else {
       setMessage(error.message || 'Unable to save your reset. Please check the Supabase connection and try again.');
@@ -302,6 +336,7 @@ export default function HomePage() {
             <div>
               <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Streak</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{streak} day{streak === 1 ? '' : 's'}</p>
+              <p className="mt-1 text-xs text-slate-500">{completedJobsToday} job{completedJobsToday === 1 ? '' : 's'} today</p>
             </div>
             <div className="rounded-3xl bg-white p-3 text-slate-800 shadow-sm">
               <p className="text-xs text-slate-500">Freezes left</p>
@@ -343,23 +378,27 @@ export default function HomePage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Today's reset</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">{completedToday ? 'All done for today' : taskText || 'Pick your energy to get a task'}</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">{taskText || 'Pick your energy to get a task'}</h2>
             </div>
             <div className="inline-flex h-12 w-12 items-center justify-center rounded-3xl bg-primarySoft text-primary">
               <Sparkles className="h-6 w-6" />
             </div>
           </div>
-          <p className="mt-4 text-sm leading-6 text-slate-600">{completedToday ? 'Your reset is marked complete. Keep the momentum going with a quick check-in or visit Progress.' : 'This tiny task is designed to feel easy and satisfying right now.'}</p>
+          <p className="mt-4 text-sm leading-6 text-slate-600">
+            {completedJobsToday > 0
+              ? 'Your streak is safe. Log another job only if it still feels useful.'
+              : 'This tiny task is designed to feel easy and satisfying right now.'}
+          </p>
         </div>
 
         <div className="space-y-3">
           <button
             type="button"
             onClick={() => saveReset(false)}
-            disabled={completedToday || loading}
+            disabled={loading}
             className="inline-flex w-full items-center justify-center rounded-3xl bg-primary px-5 py-4 text-base font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {loading ? 'Saving...' : completedToday ? 'Today complete' : 'Done'}
+            {loading ? 'Saving...' : completedJobsToday > 0 ? 'Log another job' : 'Done'}
           </button>
           <button
             type="button"

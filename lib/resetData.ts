@@ -30,6 +30,12 @@ export function sampleTask(level: EnergyLevel) {
   return options[index];
 }
 
+export function sampleFromTasks(level: EnergyLevel, extraTasks: string[]) {
+  const options = [...energyTasks[level], ...extraTasks];
+  const index = Math.floor(Math.random() * options.length);
+  return options[index];
+}
+
 export function defaultTask(level: EnergyLevel) {
   return energyTasks[level][0];
 }
