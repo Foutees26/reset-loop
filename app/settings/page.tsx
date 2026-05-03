@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { getOrCreateBrowserUserId } from '../../lib/browserUser';
-import { Bell, CheckCircle2, GripVertical, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { createBrowserUser, getBrowserUsers, getCurrentBrowserUser, getOrCreateBrowserUserId, setActiveBrowserUser, type BrowserUser } from '../../lib/browserUser';
+import { Bell, CheckCircle2, GripVertical, Pencil, Plus, Save, Trash2, UserPlus, Users, X } from 'lucide-react';
 import { energyLabels, energyTasks, type EnergyLevel } from '../../lib/resetData';
 
 interface Profile {
@@ -24,6 +24,8 @@ interface CustomTask {
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userId, setUserId] = useState<string>('');
+  const [browserUsers, setBrowserUsers] = useState<BrowserUser[]>([]);
+  const [newUserName, setNewUserName] = useState('');
   const [reminderTime, setReminderTime] = useState('20:00');
   const [customTasks, setCustomTasks] = useState<CustomTask[]>([]);
   const [newTaskText, setNewTaskText] = useState('');
@@ -52,15 +54,20 @@ export default function SettingsPage() {
   );
   const isDuplicateTask = Boolean(normalizedNewTask && allKnownTaskNames.has(normalizedNewTask));
   const isDuplicateEditingTask = Boolean(normalizedEditingTask && editableKnownTaskNames.has(normalizedEditingTask));
+  const activeBrowserUser = browserUsers.find((user) => user.id === userId) ?? null;
 
   useEffect(() => {
     setUserId(getOrCreateBrowserUserId());
+    setBrowserUsers(getBrowserUsers());
   }, []);
 
   useEffect(() => {
     if (!userId || !supabase) return;
     const client = supabase;
     async function loadProfile() {
+      const browserUserName = getCurrentBrowserUser().name;
+      setProfile(null);
+      setCustomTasks([]);
       const { data, error } = await client.from('users_profile').select('*').eq('id', userId).single();
       if (data) {
         setProfile(data as Profile);
@@ -69,7 +76,7 @@ export default function SettingsPage() {
       } else if (error) {
         const { data: created, error: createError } = await client
           .from('users_profile')
-          .insert({ id: userId, display_name: 'Friend', reminder_time: null, jobs_seeded: false })
+          .insert({ id: userId, display_name: browserUserName, reminder_time: null, jobs_seeded: false })
           .select()
           .single();
         if (created) {
@@ -136,7 +143,7 @@ export default function SettingsPage() {
 
     const { data: created, error } = await client
       .from('users_profile')
-      .insert({ id: userId, display_name: 'Friend', reminder_time: null, jobs_seeded: false })
+      .insert({ id: userId, display_name: activeBrowserUser?.name ?? 'Friend', reminder_time: null, jobs_seeded: false })
       .select()
       .single();
     if (created) {
@@ -173,6 +180,37 @@ export default function SettingsPage() {
     setStatus(permission === 'granted' ? 'Notifications enabled.' : 'Notifications blocked.');
   }
 
+  function switchUser(nextUserId: string) {
+    const selectedUser = setActiveBrowserUser(nextUserId);
+    if (!selectedUser) return;
+
+    setUserId(selectedUser.id);
+    setProfile(null);
+    setCustomTasks([]);
+    setEditingTaskId(null);
+    setNewTaskText('');
+    setStatus(`${selectedUser.name} is active now.`);
+    setBrowserUsers(getBrowserUsers());
+  }
+
+  function addUser() {
+    const trimmedName = newUserName.trim();
+    if (!trimmedName) {
+      setStatus('Add a name for the new user.');
+      return;
+    }
+
+    const newUser = createBrowserUser(trimmedName);
+    setBrowserUsers(getBrowserUsers());
+    setUserId(newUser.id);
+    setProfile(null);
+    setCustomTasks([]);
+    setEditingTaskId(null);
+    setNewTaskText('');
+    setNewUserName('');
+    setStatus(`${newUser.name} was added and is active now.`);
+  }
+
   async function addCustomTask() {
     const trimmedTask = newTaskText.trim();
     if (!trimmedTask || !userId || !supabase) return;
@@ -204,10 +242,23 @@ export default function SettingsPage() {
 
   async function deleteCustomTask(taskId: string) {
     if (!supabase) return;
+    const taskToDelete = customTasks.find((task) => task.id === taskId);
+    const confirmed = window.confirm(`Delete "${taskToDelete?.task_text ?? 'this job'}" from the suggestion list?`);
+    if (!confirmed) return;
+
     const client = supabase;
-    const { error } = await client.from('custom_tasks').delete().eq('id', taskId);
+    const { data, error } = await client
+      .from('custom_tasks')
+      .delete()
+      .eq('id', taskId)
+      .select('id');
     if (error) {
       setStatus(error.message || 'Unable to remove job. Please try again.');
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      setStatus('Unable to remove job. Run the latest Supabase SQL so the job delete policy is active, then try again.');
       return;
     }
 
@@ -312,6 +363,55 @@ export default function SettingsPage() {
           </div>
         </div>
         <p className="mt-4 text-sm leading-6 text-slate-600">A simple reminder time keeps the app gentle: just one thing, 1-2 nudges max per day.</p>
+      </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Users</p>
+            <h2 className="mt-1 text-xl font-semibold text-slate-950">Who is resetting?</h2>
+          </div>
+          <div className="rounded-3xl bg-primarySoft p-3 text-primary">
+            <Users className="h-5 w-5" />
+          </div>
+        </div>
+        <p className="text-sm leading-6 text-slate-600">Each user gets their own streak, jobs, check-ins, and progress on this device.</p>
+
+        <div className="mt-4 space-y-2">
+          {browserUsers.map((user) => (
+            <button
+              key={user.id}
+              type="button"
+              onClick={() => switchUser(user.id)}
+              className={`flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left transition ${
+                user.id === userId
+                  ? 'border-primary bg-primarySoft text-primary'
+                  : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-primary/70 hover:bg-primarySoft'
+              }`}
+            >
+              <span className="font-semibold">{user.name}</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.18em]">{user.id === userId ? 'Active' : 'Switch'}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4 flex gap-2">
+          <input
+            type="text"
+            value={newUserName}
+            onChange={(event) => setNewUserName(event.target.value)}
+            placeholder="Add user name"
+            className="min-w-0 flex-1 rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10"
+          />
+          <button
+            type="button"
+            onClick={addUser}
+            className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl bg-primary text-white shadow-lg shadow-primary/20 transition hover:bg-blue-600"
+            aria-label="Add user"
+          >
+            <UserPlus className="h-5 w-5" />
+          </button>
+        </div>
       </section>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">

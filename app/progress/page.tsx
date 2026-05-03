@@ -130,6 +130,10 @@ export default function ProgressPage() {
 
   async function deleteResetLog(logId: string) {
     if (!supabase) return;
+    const logToDelete = logs.find((log) => log.id === logId);
+    const confirmed = window.confirm(`Delete "${logToDelete?.task_text ?? 'this reset'}" from your completed resets? This can change your streak and progress totals.`);
+    if (!confirmed) return;
+
     const client = supabase;
     setDeleteStatus('');
     setDeletingResetId(logId);

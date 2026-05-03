@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BellRing, Sparkles, CheckCircle2, Flame, RefreshCw, ShieldCheck, Shuffle, Volume2, VolumeX } from 'lucide-react';
+import Image from 'next/image';
+import { BellRing, Sparkles, CheckCircle2, Flame, ShieldCheck, Shuffle, Volume2, VolumeX } from 'lucide-react';
 import { format, parseISO, startOfWeek, subDays } from 'date-fns';
 import { supabase } from '../../../lib/supabaseClient';
 import { defaultTask, energyLabels, energyTasks, sampleDifferentTaskFromList, sampleTaskFromList, type EnergyLevel } from '../../../lib/resetData';
-import { getOrCreateBrowserUserId } from '../../../lib/browserUser';
+import { getCurrentBrowserUser, getOrCreateBrowserUserId } from '../../../lib/browserUser';
 import CheckInModal from '../../../components/CheckInModal';
 
 interface Profile {
@@ -418,7 +419,7 @@ export default function HomePage() {
   async function createProfile(client: NonNullable<typeof supabase>, id: string) {
     return client
       .from('users_profile')
-      .upsert({ id, display_name: 'Friend', reminder_time: null }, { onConflict: 'id', ignoreDuplicates: true })
+      .upsert({ id, display_name: getCurrentBrowserUser().name, reminder_time: null }, { onConflict: 'id', ignoreDuplicates: true })
       .select()
       .single();
   }
@@ -539,7 +540,13 @@ export default function HomePage() {
           ))}
           <div className={`reward-card reward-${reward.stage}`}>
             <div className="reward-logo">
-              <RefreshCw className="h-9 w-9" />
+              <Image
+                src="/logos/Logo%20only.png"
+                alt="Reset Loop"
+                width={46}
+                height={45}
+                className="h-12 w-12 object-contain"
+              />
             </div>
             <p className="reward-eyebrow">Streak impact</p>
             <div className="reward-streak-row">
