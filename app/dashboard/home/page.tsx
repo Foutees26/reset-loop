@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { BellRing, Sparkles, CheckCircle2, ShieldCheck, PartyPopper, Shuffle } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { BellRing, Sparkles, CheckCircle2, Flame, RefreshCw, ShieldCheck, Shuffle, Volume2, VolumeX } from 'lucide-react';
 import { format, parseISO, startOfWeek, subDays } from 'date-fns';
 import { supabase } from '../../../lib/supabaseClient';
 import { defaultTask, energyLabels, energyTasks, sampleDifferentTaskFromList, sampleTaskFromList, type EnergyLevel } from '../../../lib/resetData';
@@ -32,6 +32,16 @@ interface CustomTask {
   created_at: string;
 }
 
+type RewardStage = 'idle' | 'anticipation' | 'impact' | 'celebration' | 'settle';
+
+interface RewardState {
+  stage: RewardStage;
+  previousStreak: number;
+  nextStreak: number;
+  message: string;
+  variant: number;
+}
+
 const maxRemindersPerDay = 2;
 const reminderMessages = [
   {
@@ -55,6 +65,21 @@ const motivationalQuotes = [
   'Choose the next kind step.',
 ];
 
+const rewardMessages = [
+  'Nice. That counts.',
+  'You showed up.',
+  'That was enough.',
+  'Small win logged.',
+];
+
+const idleRewardState: RewardState = {
+  stage: 'idle',
+  previousStreak: 0,
+  nextStreak: 0,
+  message: rewardMessages[0],
+  variant: 0,
+};
+
 export default function HomePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userId, setUserId] = useState<string>('');
@@ -66,8 +91,11 @@ export default function HomePage() {
   const [message, setMessage] = useState<string>('Pick your energy level and settle into a tiny reset.');
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
-  const [celebrating, setCelebrating] = useState(false);
+  const [reward, setReward] = useState<RewardState>(idleRewardState);
+  const [isPressingDone, setIsPressingDone] = useState(false);
+  const [rewardSoundEnabled, setRewardSoundEnabled] = useState(false);
   const [quote, setQuote] = useState('Small steps still count.');
+  const rewardTimers = useRef<number[]>([]);
 
   const todayKey = format(new Date(), 'yyyy-MM-dd');
 
@@ -75,6 +103,7 @@ export default function HomePage() {
     setUserId(getOrCreateBrowserUserId());
     const quoteIndex = Math.floor(Math.random() * motivationalQuotes.length);
     setQuote(motivationalQuotes[quoteIndex]);
+    setRewardSoundEnabled(window.localStorage.getItem('reset_loop_reward_sound') === 'true');
   }, []);
 
   useEffect(() => {
@@ -154,11 +183,7 @@ export default function HomePage() {
     }
   }, [profile]);
 
-  useEffect(() => {
-    if (!celebrating) return;
-    const timeout = window.setTimeout(() => setCelebrating(false), 1800);
-    return () => window.clearTimeout(timeout);
-  }, [celebrating]);
+  useEffect(() => () => clearRewardTimers(), []);
 
   const datesWithLogs = useMemo(() => {
     const set = new Set<string>();
@@ -182,6 +207,13 @@ export default function HomePage() {
     }
     return count;
   }, [datesWithLogs, completedToday]);
+  const rewardActive = reward.stage !== 'idle';
+  const rewardVisible = reward.stage === 'impact' || reward.stage === 'celebration' || reward.stage === 'settle';
+  const displayedStreak = rewardActive && reward.stage !== 'anticipation'
+    ? reward.stage === 'impact' || reward.stage === 'celebration' || reward.stage === 'settle'
+      ? reward.nextStreak
+      : reward.previousStreak
+    : streak;
 
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
   const freezeLogsThisWeek = logs.filter(
@@ -239,6 +271,88 @@ export default function HomePage() {
     setMessage('Shuffled. Pick the job that fits right now.');
   }
 
+  function clearRewardTimers() {
+    rewardTimers.current.forEach((timer) => window.clearTimeout(timer));
+    rewardTimers.current = [];
+  }
+
+  function scheduleRewardStep(callback: () => void, delay: number) {
+    const timer = window.setTimeout(callback, delay);
+    rewardTimers.current.push(timer);
+  }
+
+  function triggerHaptic(pattern: number | number[] = 18) {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(pattern);
+    }
+  }
+
+  function playRewardTone() {
+    if (!rewardSoundEnabled) return;
+    const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const context = new AudioContextClass();
+    const gain = context.createGain();
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.045, context.currentTime + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.42);
+    gain.connect(context.destination);
+
+    [523.25, 659.25, 783.99].forEach((frequency, index) => {
+      const oscillator = context.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, context.currentTime + index * 0.075);
+      oscillator.connect(gain);
+      oscillator.start(context.currentTime + index * 0.075);
+      oscillator.stop(context.currentTime + 0.28 + index * 0.075);
+    });
+
+    window.setTimeout(() => context.close(), 700);
+  }
+
+  function startRewardSequence(previousStreak: number, nextStreak: number) {
+    clearRewardTimers();
+    const nextMessage = rewardMessages[Math.floor(Math.random() * rewardMessages.length)];
+    const variant = Math.floor(Math.random() * 4);
+
+    setReward({ stage: 'anticipation', previousStreak, nextStreak, message: nextMessage, variant });
+    setIsPressingDone(true);
+    triggerHaptic(18);
+
+    scheduleRewardStep(() => {
+      setIsPressingDone(false);
+      setReward((currentReward) => ({ ...currentReward, stage: 'impact' }));
+      triggerHaptic([12, 24, 18]);
+    }, 240);
+
+    scheduleRewardStep(() => {
+      setReward((currentReward) => ({ ...currentReward, stage: 'celebration' }));
+      playRewardTone();
+    }, 760);
+
+    scheduleRewardStep(() => {
+      setReward((currentReward) => ({ ...currentReward, stage: 'settle' }));
+    }, 1660);
+
+    scheduleRewardStep(() => {
+      setReward(idleRewardState);
+    }, 2180);
+  }
+
+  function skipReward() {
+    clearRewardTimers();
+    setIsPressingDone(false);
+    setReward(idleRewardState);
+  }
+
+  function toggleRewardSound() {
+    const nextValue = !rewardSoundEnabled;
+    setRewardSoundEnabled(nextValue);
+    window.localStorage.setItem('reset_loop_reward_sound', String(nextValue));
+    setMessage(nextValue ? 'Reward sound on.' : 'Reward sound off.');
+  }
+
   async function createProfile(client: NonNullable<typeof supabase>, id: string) {
     return client
       .from('users_profile')
@@ -278,6 +392,8 @@ export default function HomePage() {
       setMessage(`No ${energyLabels[selectedEnergy].toLowerCase()} energy job selected. Add or move one in Settings.`);
       return;
     }
+    const previousStreak = streak;
+    const nextStreak = !usedFreeze && !completedToday ? streak + 1 : streak;
     const client = supabase;
     setLoading(true);
     setMessage(usedFreeze ? 'Saving your pause day...' : 'Saving your reset...');
@@ -308,7 +424,7 @@ export default function HomePage() {
         setLogs((currentLogs) => [savedReset as ResetLog, ...currentLogs]);
       }
       if (!usedFreeze) {
-        setCelebrating(true);
+        startRewardSequence(previousStreak, nextStreak);
       }
       setShowCheckIn(!usedFreeze);
       const { data: resetItems } = await client
@@ -342,19 +458,31 @@ export default function HomePage() {
 
   return (
     <div className="relative space-y-6 pb-10">
-      {celebrating && (
-        <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden="true">
-          {Array.from({ length: 18 }).map((_, index) => (
+      {rewardVisible && (
+        <div className="fixed inset-0 z-50 overflow-hidden bg-white/20" onClick={skipReward} role="presentation">
+          {reward.stage === 'celebration' && Array.from({ length: 22 }).map((_, index) => (
             <span
               key={index}
-              className="confetti-piece"
+              className={`confetti-piece confetti-piece-${reward.variant}`}
               style={{
-                left: `${8 + ((index * 5) % 86)}%`,
-                animationDelay: `${(index % 6) * 0.08}s`,
+                left: `${12 + ((index * 4) % 76)}%`,
+                animationDelay: `${(index % 7) * 0.045}s`,
                 backgroundColor: ['#5b8dff', '#34d399', '#7dd3fc', '#facc15', '#f472b6'][index % 5],
               }}
             />
           ))}
+          <div className={`reward-card reward-${reward.stage}`}>
+            <div className="reward-logo">
+              <RefreshCw className="h-9 w-9" />
+            </div>
+            <p className="reward-eyebrow">Streak impact</p>
+            <div className="reward-streak-row">
+              <span className="reward-streak-old">{reward.previousStreak}</span>
+              <span className="reward-streak-number">{reward.nextStreak}</span>
+              <Flame className="reward-flame h-8 w-8" />
+            </div>
+            <p className="reward-message">{reward.message}</p>
+          </div>
         </div>
       )}
 
@@ -374,11 +502,13 @@ export default function HomePage() {
           <p className="mt-2 text-3xl font-semibold leading-tight text-white">{quote}</p>
         </div>
 
-        <div className={`mt-5 space-y-3 rounded-3xl bg-slate-50 p-4 transition ${celebrating ? 'streak-pop ring-2 ring-positive/40' : ''}`}>
+        <div className={`mt-5 space-y-3 rounded-3xl bg-slate-50 p-4 transition ${rewardActive ? 'streak-pop ring-2 ring-positive/40' : ''}`}>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Streak</p>
-              <p className="mt-1 text-2xl font-semibold text-slate-900">{streak} day{streak === 1 ? '' : 's'}</p>
+              <p className={`mt-1 text-2xl font-semibold text-slate-900 ${rewardActive ? 'streak-number-roll' : ''}`}>
+                {displayedStreak} day{displayedStreak === 1 ? '' : 's'}
+              </p>
               <p className="mt-1 text-xs text-slate-500">{completedJobsToday} job{completedJobsToday === 1 ? '' : 's'} today</p>
             </div>
             <div className="rounded-3xl bg-white p-3 text-slate-800 shadow-sm">
@@ -448,7 +578,7 @@ export default function HomePage() {
             type="button"
             onClick={() => saveReset(false)}
             disabled={loading || !hasSuggestedTask}
-            className="inline-flex w-full items-center justify-center rounded-3xl bg-primary px-5 py-4 text-base font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className={`inline-flex w-full items-center justify-center rounded-3xl bg-primary px-5 py-4 text-base font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 ${isPressingDone ? 'done-anticipation' : ''}`}
           >
             {loading ? 'Saving...' : completedJobsToday > 0 ? 'Log another job' : 'Done'}
           </button>
@@ -465,23 +595,19 @@ export default function HomePage() {
         <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
           <p className="font-semibold text-slate-800">What happens next</p>
           <p className="mt-2">A reset log saves your completion, protects your streak, and offers a calm check-in so you can land the day with encouragement.</p>
-          <p className="mt-3 font-medium text-slate-800">{message}</p>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <p className="font-medium text-slate-800">{message}</p>
+            <button
+              type="button"
+              onClick={toggleRewardSound}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm transition hover:text-slate-900"
+              aria-label={rewardSoundEnabled ? 'Turn reward sound off' : 'Turn reward sound on'}
+            >
+              {rewardSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
       </section>
-
-      {celebrating && (
-        <section className="success-pop rounded-3xl border border-positive/30 bg-emerald-50 p-4 text-emerald-900 shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="rounded-3xl bg-white p-3 text-positive">
-              <PartyPopper className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Reset complete</p>
-              <p className="mt-1 text-sm text-emerald-800">Your streak grew. Keep it gentle and call that a win.</p>
-            </div>
-          </div>
-        </section>
-      )}
 
       <section className="grid gap-4 md:grid-cols-2">
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">

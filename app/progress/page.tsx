@@ -36,6 +36,8 @@ export default function ProgressPage() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string>('');
   const [status, setStatus] = useState('');
+  const [deleteStatus, setDeleteStatus] = useState('');
+  const [deletingResetId, setDeletingResetId] = useState<string | null>(null);
 
   useEffect(() => {
     setUserId(getOrCreateBrowserUserId());
@@ -129,14 +131,27 @@ export default function ProgressPage() {
   async function deleteResetLog(logId: string) {
     if (!supabase) return;
     const client = supabase;
-    const { error } = await client.from('reset_logs').delete().eq('id', logId);
+    setDeleteStatus('');
+    setDeletingResetId(logId);
+    const { data, error } = await client
+      .from('reset_logs')
+      .delete()
+      .eq('id', logId)
+      .select('id');
+
+    setDeletingResetId(null);
     if (error) {
-      setStatus(error.message || 'Unable to delete that reset. Please try again.');
+      setDeleteStatus(error.message || 'Unable to delete that reset. Please try again.');
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      setDeleteStatus('Unable to delete that reset. Run the latest Supabase SQL so the reset delete policy is active, then try again.');
       return;
     }
 
     setLogs((currentLogs) => currentLogs.filter((log) => log.id !== logId));
-    setStatus('Reset deleted.');
+    setDeleteStatus('Reset deleted.');
   }
 
   if (!supabase) {
@@ -266,6 +281,7 @@ export default function ProgressPage() {
             <h2 className="mt-1 text-xl font-semibold text-slate-950">Last 7 entries</h2>
           </div>
         </div>
+        {deleteStatus && <p className="mb-3 text-sm text-slate-600">{deleteStatus}</p>}
         {loading ? (
           <p className="text-sm text-slate-500">Loading your reset history...</p>
         ) : status ? (
@@ -283,7 +299,8 @@ export default function ProgressPage() {
                     <button
                       type="button"
                       onClick={() => deleteResetLog(log.id)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm transition hover:text-slate-900"
+                      disabled={deletingResetId === log.id}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm transition hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                       aria-label={`Delete ${log.task_text}`}
                     >
                       <Trash2 className="h-4 w-4" />
