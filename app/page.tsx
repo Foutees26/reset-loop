@@ -81,7 +81,12 @@ export default function OpeningPage() {
                 onClick={() => login(user.id)}
                 className="flex w-full items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-slate-800 transition hover:border-primary/70 hover:bg-primarySoft hover:text-primary"
               >
-                <span className="font-semibold">{user.name}</span>
+                <span className="flex items-center gap-2 font-semibold">
+                  {user.name}
+                  {user.role === 'admin' && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-800">Admin</span>
+                  )}
+                </span>
                 <ArrowRight className="h-4 w-4" />
               </button>
             ))}

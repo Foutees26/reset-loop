@@ -70,7 +70,13 @@ export default function SettingsPage() {
       setCustomTasks([]);
       const { data, error } = await client.from('users_profile').select('*').eq('id', userId).single();
       if (data) {
-        setProfile(data as Profile);
+        const loadedProfile = data as Profile;
+        if (loadedProfile.display_name !== browserUserName) {
+          await client.from('users_profile').update({ display_name: browserUserName }).eq('id', userId);
+          setProfile({ ...loadedProfile, display_name: browserUserName });
+        } else {
+          setProfile(loadedProfile);
+        }
         setReminderTime(data.reminder_time ?? '20:00');
         setStatus('');
       } else if (error) {
@@ -389,7 +395,12 @@ export default function SettingsPage() {
                   : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-primary/70 hover:bg-primarySoft'
               }`}
             >
-              <span className="font-semibold">{user.name}</span>
+              <span className="flex items-center gap-2 font-semibold">
+                {user.name}
+                {user.role === 'admin' && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-800">Admin</span>
+                )}
+              </span>
               <span className="text-xs font-semibold uppercase tracking-[0.18em]">{user.id === userId ? 'Active' : 'Switch'}</span>
             </button>
           ))}

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { BellRing, Sparkles, CheckCircle2, Flame, ShieldCheck, Shuffle, Volume2, VolumeX } from 'lucide-react';
+import { BellRing, CheckCircle2, Flame, ShieldCheck, Shuffle, Volume2, VolumeX } from 'lucide-react';
 import { format, parseISO, startOfWeek, subDays } from 'date-fns';
 import { supabase } from '../../../lib/supabaseClient';
 import { defaultTask, energyLabels, energyTasks, sampleDifferentTaskFromList, sampleTaskFromList, type EnergyLevel } from '../../../lib/resetData';
@@ -156,7 +156,13 @@ export default function HomePage() {
         if (created) setProfile(created);
         if (createError) setMessage('Unable to create your profile. Check the Supabase schema and connection.');
       } else if (existingProfile) {
-        setProfile(existingProfile);
+        const browserUserName = getCurrentBrowserUser().name;
+        if (existingProfile.display_name !== browserUserName) {
+          await client.from('users_profile').update({ display_name: browserUserName }).eq('id', userId);
+          setProfile({ ...existingProfile, display_name: browserUserName });
+        } else {
+          setProfile(existingProfile);
+        }
       }
 
       const [{ data: resetItems, error: logsError }, { data: taskItems, error: tasksError }] = await Promise.all([
@@ -562,8 +568,7 @@ export default function HomePage() {
       <section className="hero-panel relative overflow-hidden rounded-[36px] border border-white/30 p-5 text-white sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/70">Reset Loop</p>
-            <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">Your daily reset</h1>
+            <h1 className="text-3xl font-semibold text-white sm:text-4xl">Your daily reset</h1>
           </div>
           <div className="rounded-3xl bg-white/20 px-4 py-3 text-white ring-1 ring-white/20">
             <BellRing className="h-6 w-6" />
@@ -624,9 +629,22 @@ export default function HomePage() {
               <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Today&apos;s reset</p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">{taskText || 'Pick your energy to get a task'}</h2>
             </div>
-            <div className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[22px] ${energyStyles[selectedEnergy].badge}`}>
-              <Sparkles className="h-6 w-6" />
-            </div>
+            <button
+              type="button"
+              onClick={shuffleTask}
+              disabled={loading}
+              className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[22px] transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60 ${energyStyles[selectedEnergy].badge}`}
+              aria-label="Shuffle job"
+              title="Shuffle job"
+            >
+              <Image
+                src="/logos/Logo%20only.png"
+                alt=""
+                width={32}
+                height={31}
+                className="h-8 w-8 object-contain"
+              />
+            </button>
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-600">
             {taskCommitted
