@@ -344,15 +344,15 @@ export default function HomePage() {
     scheduleRewardStep(() => {
       setReward((currentReward) => ({ ...currentReward, stage: 'celebration' }));
       playRewardTone();
-    }, 760);
+    }, 980);
 
     scheduleRewardStep(() => {
       setReward((currentReward) => ({ ...currentReward, stage: 'settle' }));
-    }, 1660);
+    }, 2900);
 
     scheduleRewardStep(() => {
       finishRewardSequence();
-    }, 2180);
+    }, 3450);
   }
 
   function skipReward() {
