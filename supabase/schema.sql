@@ -47,10 +47,12 @@ drop policy if exists "anon can create profiles" on users_profile;
 drop policy if exists "anon can update profiles" on users_profile;
 drop policy if exists "anon can read reset logs" on reset_logs;
 drop policy if exists "anon can create reset logs" on reset_logs;
+drop policy if exists "anon can delete reset logs" on reset_logs;
 drop policy if exists "anon can read check ins" on check_ins;
 drop policy if exists "anon can create check ins" on check_ins;
 drop policy if exists "anon can read custom tasks" on custom_tasks;
 drop policy if exists "anon can create custom tasks" on custom_tasks;
+drop policy if exists "anon can update custom tasks" on custom_tasks;
 drop policy if exists "anon can delete custom tasks" on custom_tasks;
 
 create policy "anon can read profiles"
@@ -79,6 +81,11 @@ create policy "anon can create reset logs"
   to anon
   with check (true);
 
+create policy "anon can delete reset logs"
+  on reset_logs for delete
+  to anon
+  using (true);
+
 create policy "anon can read check ins"
   on check_ins for select
   to anon
@@ -97,6 +104,12 @@ create policy "anon can read custom tasks"
 create policy "anon can create custom tasks"
   on custom_tasks for insert
   to anon
+  with check (true);
+
+create policy "anon can update custom tasks"
+  on custom_tasks for update
+  to anon
+  using (true)
   with check (true);
 
 create policy "anon can delete custom tasks"

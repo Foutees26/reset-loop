@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { getOrCreateBrowserUserId } from '../../lib/browserUser';
-import { Bell, CheckCircle2, Plus, Trash2 } from 'lucide-react';
+import { Bell, CheckCircle2, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { energyLabels, energyTasks, type EnergyLevel } from '../../lib/resetData';
 
 interface Profile {
@@ -27,9 +27,13 @@ export default function SettingsPage() {
   const [customTasks, setCustomTasks] = useState<CustomTask[]>([]);
   const [newTaskText, setNewTaskText] = useState('');
   const [newTaskEnergy, setNewTaskEnergy] = useState<EnergyLevel>('low');
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskText, setEditingTaskText] = useState('');
+  const [editingTaskEnergy, setEditingTaskEnergy] = useState<EnergyLevel>('low');
   const [status, setStatus] = useState('');
 
   const normalizedNewTask = newTaskText.trim().toLowerCase();
+  const normalizedEditingTask = editingTaskText.trim().toLowerCase();
   const allKnownTaskNames = useMemo(
     () => new Set([
       ...Object.values(energyTasks).flat(),
@@ -37,7 +41,17 @@ export default function SettingsPage() {
     ].map((task) => task.trim().toLowerCase())),
     [customTasks],
   );
+  const editableKnownTaskNames = useMemo(
+    () => new Set([
+      ...Object.values(energyTasks).flat(),
+      ...customTasks
+        .filter((task) => task.id !== editingTaskId)
+        .map((task) => task.task_text),
+    ].map((task) => task.trim().toLowerCase())),
+    [customTasks, editingTaskId],
+  );
   const isDuplicateTask = Boolean(normalizedNewTask && allKnownTaskNames.has(normalizedNewTask));
+  const isDuplicateEditingTask = Boolean(normalizedEditingTask && editableKnownTaskNames.has(normalizedEditingTask));
 
   useEffect(() => {
     setUserId(getOrCreateBrowserUserId());
@@ -167,6 +181,49 @@ export default function SettingsPage() {
     setStatus('Job removed from future suggestions.');
   }
 
+  function startEditingTask(task: CustomTask) {
+    setEditingTaskId(task.id);
+    setEditingTaskText(task.task_text);
+    setEditingTaskEnergy(task.energy_level);
+    setStatus('');
+  }
+
+  function cancelEditingTask() {
+    setEditingTaskId(null);
+    setEditingTaskText('');
+    setEditingTaskEnergy('low');
+  }
+
+  async function saveEditedTask() {
+    const trimmedTask = editingTaskText.trim();
+    if (!editingTaskId || !trimmedTask || !supabase) return;
+    if (isDuplicateEditingTask) {
+      setStatus('That job is already in the suggestion list.');
+      return;
+    }
+
+    const client = supabase;
+    const { data, error } = await client
+      .from('custom_tasks')
+      .update({ task_text: trimmedTask, energy_level: editingTaskEnergy })
+      .eq('id', editingTaskId)
+      .select()
+      .single();
+
+    if (error) {
+      setStatus(error.message || 'Unable to update job. Please try again.');
+      return;
+    }
+
+    if (data) {
+      setCustomTasks((currentTasks) => currentTasks.map((task) => (
+        task.id === editingTaskId ? data as CustomTask : task
+      )));
+    }
+    cancelEditingTask();
+    setStatus('Job updated.');
+  }
+
   if (!supabase) {
     return (
       <div className="space-y-6 pb-10">
@@ -289,18 +346,79 @@ export default function SettingsPage() {
                   ))}
                   {customTasksForLevel.map((task) => (
                     <div key={task.id} className="flex items-center justify-between gap-3 rounded-3xl bg-white p-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{task.task_text}</p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">Custom</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => deleteCustomTask(task.id)}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-500 transition hover:text-slate-900"
-                        aria-label={`Remove ${task.task_text}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {editingTaskId === task.id ? (
+                        <div className="w-full space-y-3">
+                          <input
+                            type="text"
+                            value={editingTaskText}
+                            onChange={(event) => setEditingTaskText(event.target.value)}
+                            className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                          />
+                          {isDuplicateEditingTask && (
+                            <p className="text-sm font-medium text-slate-600">That job is already listed.</p>
+                          )}
+                          <div className="grid grid-cols-3 gap-2">
+                            {(['low', 'medium', 'high'] as EnergyLevel[]).map((editLevel) => (
+                              <button
+                                key={editLevel}
+                                type="button"
+                                onClick={() => setEditingTaskEnergy(editLevel)}
+                                className={`rounded-3xl border px-3 py-2 text-sm font-semibold transition ${
+                                  editingTaskEnergy === editLevel
+                                    ? 'border-primary bg-primary text-white'
+                                    : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-primary/80 hover:bg-primarySoft'
+                                }`}
+                              >
+                                {energyLabels[editLevel]}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={saveEditedTask}
+                              disabled={!editingTaskText.trim() || isDuplicateEditingTask}
+                              className="inline-flex items-center justify-center gap-2 rounded-3xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            >
+                              <Save className="h-4 w-4" />
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelEditingTask}
+                              className="inline-flex items-center justify-center gap-2 rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary hover:bg-primarySoft"
+                            >
+                              <X className="h-4 w-4" />
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">{task.task_text}</p>
+                            <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">Custom</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => startEditingTask(task)}
+                              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-500 transition hover:text-slate-900"
+                              aria-label={`Edit ${task.task_text}`}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteCustomTask(task.id)}
+                              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-500 transition hover:text-slate-900"
+                              aria-label={`Remove ${task.task_text}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>

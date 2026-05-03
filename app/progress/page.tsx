@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '../../lib/supabaseClient';
 import { getOrCreateBrowserUserId } from '../../lib/browserUser';
-import { CheckCircle2, TrendingUp, CalendarDays, HeartPulse } from 'lucide-react';
+import { CheckCircle2, TrendingUp, CalendarDays, HeartPulse, Trash2 } from 'lucide-react';
 
 interface ResetLog {
   id: string;
@@ -125,6 +125,19 @@ export default function ProgressPage() {
   const moodPoints = buildPolyline(chartData.map((item) => scoreMaps.mood[item.mood]));
   const energyPoints = buildPolyline(chartData.map((item) => scoreMaps.energy[item.energy]));
   const painPoints = buildPolyline(chartData.map((item) => scoreMaps.pain[item.pain]));
+
+  async function deleteResetLog(logId: string) {
+    if (!supabase) return;
+    const client = supabase;
+    const { error } = await client.from('reset_logs').delete().eq('id', logId);
+    if (error) {
+      setStatus(error.message || 'Unable to delete that reset. Please try again.');
+      return;
+    }
+
+    setLogs((currentLogs) => currentLogs.filter((log) => log.id !== logId));
+    setStatus('Reset deleted.');
+  }
 
   if (!supabase) {
     return (
@@ -265,7 +278,17 @@ export default function ProgressPage() {
               <div key={log.id} className="rounded-3xl bg-slate-50 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-semibold text-slate-900">{log.task_text}</p>
-                  <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{log.used_freeze ? 'Pause' : log.energy_level}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{log.used_freeze ? 'Pause' : log.energy_level}</span>
+                    <button
+                      type="button"
+                      onClick={() => deleteResetLog(log.id)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm transition hover:text-slate-900"
+                      aria-label={`Delete ${log.task_text}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
                 <p className="mt-2 text-sm text-slate-600">{format(parseISO(log.completed_at), 'MMM d, yyyy - h:mm a')}</p>
               </div>

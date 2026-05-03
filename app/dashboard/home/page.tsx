@@ -44,6 +44,17 @@ const reminderMessages = [
   },
 ];
 
+const motivationalQuotes = [
+  'Small steps still count.',
+  'One job is progress.',
+  'Start tiny, finish lighter.',
+  'Your pace is allowed.',
+  'A reset can be simple.',
+  'Momentum begins with one thing.',
+  'Done gently is still done.',
+  'Choose the next kind step.',
+];
+
 export default function HomePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userId, setUserId] = useState<string>('');
@@ -56,11 +67,14 @@ export default function HomePage() {
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const [celebrating, setCelebrating] = useState(false);
+  const [quote, setQuote] = useState('Small steps still count.');
 
   const todayKey = format(new Date(), 'yyyy-MM-dd');
 
   useEffect(() => {
     setUserId(getOrCreateBrowserUserId());
+    const quoteIndex = Math.floor(Math.random() * motivationalQuotes.length);
+    setQuote(motivationalQuotes[quoteIndex]);
   }, []);
 
   useEffect(() => {
@@ -331,6 +345,7 @@ export default function HomePage() {
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Reset Loop</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-950">Your daily reset</h1>
+            <p className="mt-3 text-sm font-medium text-slate-600">{quote}</p>
           </div>
           <div className="rounded-3xl bg-primarySoft px-4 py-3 text-primary">
             <BellRing className="h-6 w-6" />
