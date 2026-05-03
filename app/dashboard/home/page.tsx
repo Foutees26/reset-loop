@@ -208,12 +208,18 @@ export default function HomePage() {
     },
     [customTasks, selectedEnergy],
   );
+  const hasSuggestedTask = customSuggestions.length > 0;
 
   function makeTask(level: EnergyLevel) {
     const customTasksForEnergy = customTasks
       .filter((item) => item.energy_level === level)
       .map((item) => item.task_text);
     const availableTasks = customTasks.length > 0 ? customTasksForEnergy : energyTasks[level];
+    if (availableTasks.length === 0) {
+      setTaskText('');
+      setMessage(`Move or add a ${energyLabels[level].toLowerCase()} energy job in Settings.`);
+      return;
+    }
     const nextTask = sampleTaskFromList(availableTasks, level);
     setTaskText(nextTask);
   }
@@ -224,6 +230,10 @@ export default function HomePage() {
   }
 
   function shuffleTask() {
+    if (!hasSuggestedTask) {
+      setMessage(`No ${energyLabels[selectedEnergy].toLowerCase()} energy jobs yet. Move or add one in Settings.`);
+      return;
+    }
     const nextTask = sampleDifferentTaskFromList(customSuggestions, selectedEnergy, taskText);
     setTaskText(nextTask);
     setMessage('Shuffled. Pick the job that fits right now.');
@@ -264,6 +274,10 @@ export default function HomePage() {
   async function saveReset(usedFreeze = false) {
     if (!userId || loading || !supabase) return;
     if (usedFreeze && completedToday) return;
+    if (!usedFreeze && !taskText) {
+      setMessage(`No ${energyLabels[selectedEnergy].toLowerCase()} energy job selected. Add or move one in Settings.`);
+      return;
+    }
     const client = supabase;
     setLoading(true);
     setMessage(usedFreeze ? 'Saving your pause day...' : 'Saving your reset...');
@@ -305,7 +319,7 @@ export default function HomePage() {
         .limit(200);
       setLogs((resetItems ?? []) as ResetLog[]);
       if (!usedFreeze) {
-        setTaskText(sampleTaskFromList(customSuggestions, selectedEnergy));
+        setTaskText(hasSuggestedTask ? sampleTaskFromList(customSuggestions, selectedEnergy) : '');
       }
     } else {
       setMessage(error.message || 'Unable to save your reset. Please check the Supabase connection and try again.');
@@ -355,9 +369,9 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="mt-5 rounded-[28px] border border-primary/20 bg-primarySoft p-4 text-primary shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary/80">Today&apos;s nudge</p>
-          <p className="mt-2 text-2xl font-semibold leading-tight text-primary">{quote}</p>
+        <div className="mt-5 rounded-[28px] border border-primary/30 bg-primary p-5 text-white shadow-lg shadow-primary/25">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/75">Today&apos;s nudge</p>
+          <p className="mt-2 text-3xl font-semibold leading-tight text-white">{quote}</p>
         </div>
 
         <div className={`mt-5 space-y-3 rounded-3xl bg-slate-50 p-4 transition ${celebrating ? 'streak-pop ring-2 ring-positive/40' : ''}`}>
@@ -433,7 +447,7 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => saveReset(false)}
-            disabled={loading}
+            disabled={loading || !hasSuggestedTask}
             className="inline-flex w-full items-center justify-center rounded-3xl bg-primary px-5 py-4 text-base font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {loading ? 'Saving...' : completedJobsToday > 0 ? 'Log another job' : 'Done'}
