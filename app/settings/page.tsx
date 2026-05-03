@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { createBrowserUser, getBrowserUsers, getCurrentBrowserUser, getOrCreateBrowserUserId, setActiveBrowserUser, type BrowserUser } from '../../lib/browserUser';
 import { Bell, CheckCircle2, GripVertical, Pencil, Plus, Save, Trash2, UserPlus, Users, X } from 'lucide-react';
 import { energyLabels, energyTasks, type EnergyLevel } from '../../lib/resetData';
+import { hasNativeLocalNotifications, requestReminderPermission, scheduleDailyReminder } from '../../lib/notifications';
 
 interface Profile {
   id: string;
@@ -170,7 +171,12 @@ export default function SettingsPage() {
       .update({ reminder_time: reminderTime })
       .eq('id', userId);
     if (!error) {
-      setStatus('Reminder saved. You will get a gentle nudge, never more than 2 in a day.');
+      const scheduleMode = await scheduleDailyReminder(reminderTime, userId);
+      setStatus(
+        scheduleMode === 'native'
+          ? 'Reminder saved. Android app notification scheduled.'
+          : 'Reminder saved. You will get a gentle nudge when browser notifications are allowed.',
+      );
       setProfile((prev) => (prev ? { ...prev, reminder_time: reminderTime } : prev));
     } else {
       setStatus('Unable to save reminder. Please try again.');
@@ -178,12 +184,16 @@ export default function SettingsPage() {
   }
 
   async function requestNotifications() {
-    if (!('Notification' in window)) {
-      setStatus('Notifications are not supported in this browser.');
+    const permission = await requestReminderPermission();
+    if (permission === 'native-granted') {
+      setStatus('Android app notifications enabled.');
       return;
     }
-    const permission = await Notification.requestPermission();
-    setStatus(permission === 'granted' ? 'Notifications enabled.' : 'Notifications blocked.');
+    if (permission === 'browser-granted') {
+      setStatus('Browser notifications enabled.');
+      return;
+    }
+    setStatus(permission === 'unsupported' ? 'Notifications are not supported here.' : 'Notifications blocked.');
   }
 
   function switchUser(nextUserId: string) {
@@ -449,7 +459,7 @@ export default function SettingsPage() {
             onClick={requestNotifications}
             className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-5 py-4 text-base font-semibold text-slate-700 transition hover:border-primary hover:bg-primarySoft"
           >
-            Enable browser notifications
+            {hasNativeLocalNotifications() ? 'Enable app notifications' : 'Enable browser notifications'}
           </button>
           {status && <p className="text-sm text-slate-600">{status}</p>}
         </div>

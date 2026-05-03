@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '../../lib/supabaseClient';
-import { getOrCreateBrowserUserId } from '../../lib/browserUser';
+import { getCurrentBrowserUser, getOrCreateBrowserUserId } from '../../lib/browserUser';
 import { CheckCircle2, TrendingUp, CalendarDays, HeartPulse, Trash2 } from 'lucide-react';
+import CheckInModal from '../../components/CheckInModal';
 
 interface ResetLog {
   id: string;
@@ -36,6 +37,8 @@ export default function ProgressPage() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string>('');
   const [status, setStatus] = useState('');
+  const [checkInStatus, setCheckInStatus] = useState('');
+  const [showCheckIn, setShowCheckIn] = useState(false);
   const [deleteStatus, setDeleteStatus] = useState('');
   const [deletingResetId, setDeletingResetId] = useState<string | null>(null);
 
@@ -128,6 +131,51 @@ export default function ProgressPage() {
   const energyPoints = buildPolyline(chartData.map((item) => scoreMaps.energy[item.energy]));
   const painPoints = buildPolyline(chartData.map((item) => scoreMaps.pain[item.pain]));
 
+  async function ensureProfile(client: NonNullable<typeof supabase>) {
+    const { error } = await client
+      .from('users_profile')
+      .upsert(
+        { id: userId, display_name: getCurrentBrowserUser().name, reminder_time: null },
+        { onConflict: 'id', ignoreDuplicates: true },
+      );
+
+    return !error;
+  }
+
+  async function saveCheckIn(mood: string, energy: string, pain: string) {
+    if (!userId || !supabase) return;
+    const client = supabase;
+    setCheckInStatus('Saving check-in...');
+
+    const profileReady = await ensureProfile(client);
+    if (!profileReady) {
+      setCheckInStatus('Unable to save your check-in. Check the Supabase schema and connection.');
+      return;
+    }
+
+    const { data, error } = await client
+      .from('check_ins')
+      .insert({
+        user_id: userId,
+        mood,
+        energy,
+        pain,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      setCheckInStatus(error.message || 'Unable to save your check-in. Please try again.');
+      return;
+    }
+
+    if (data) {
+      setCheckIns((currentCheckIns) => [data as CheckIn, ...currentCheckIns].slice(0, 30));
+    }
+    setCheckInStatus('Check-in saved.');
+  }
+
   async function deleteResetLog(logId: string) {
     if (!supabase) return;
     const logToDelete = logs.find((log) => log.id === logId);
@@ -217,10 +265,17 @@ export default function ProgressPage() {
             <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Check-ins</p>
             <h2 className="mt-1 text-xl font-semibold text-slate-950">Mood, energy, pain</h2>
           </div>
-          <div className="rounded-3xl bg-primarySoft p-3 text-primary">
+          <button
+            type="button"
+            onClick={() => setShowCheckIn(true)}
+            className="rounded-3xl bg-primarySoft p-3 text-primary transition hover:bg-primary hover:text-white"
+            aria-label="Open check-in"
+            title="Open check-in"
+          >
             <HeartPulse className="h-5 w-5" />
-          </div>
+          </button>
         </div>
+        {checkInStatus && <p className="mb-3 text-sm text-slate-600">{checkInStatus}</p>}
 
         {loading ? (
           <p className="text-sm text-slate-500">Loading your check-ins...</p>
@@ -317,6 +372,11 @@ export default function ProgressPage() {
           </div>
         )}
       </section>
+      <CheckInModal
+        open={showCheckIn}
+        onClose={() => setShowCheckIn(false)}
+        onSubmit={saveCheckIn}
+      />
     </div>
   );
 }

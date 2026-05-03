@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { BellRing, CheckCircle2, Flame, ShieldCheck, Shuffle, Volume2, VolumeX } from 'lucide-react';
+import { BellRing, CheckCircle2, Flame, ShieldCheck, Shuffle } from 'lucide-react';
 import { format, parseISO, startOfWeek, subDays } from 'date-fns';
 import { supabase } from '../../../lib/supabaseClient';
 import { defaultTask, energyLabels, energyTasks, sampleDifferentTaskFromList, sampleTaskFromList, type EnergyLevel } from '../../../lib/resetData';
@@ -463,6 +463,7 @@ export default function HomePage() {
     }
     const previousStreak = streak;
     const nextStreak = !usedFreeze && !completedToday ? streak + 1 : streak;
+    const shouldOfferCheckIn = !usedFreeze && completedJobsToday === 0;
     const client = supabase;
     setLoading(true);
     setMessage(usedFreeze ? 'Saving your pause day...' : 'Saving your reset...');
@@ -495,7 +496,7 @@ export default function HomePage() {
       }
       if (!usedFreeze) {
         setTaskCommitted(false);
-        startRewardSequence(previousStreak, nextStreak, () => setShowCheckIn(true));
+        startRewardSequence(previousStreak, nextStreak, shouldOfferCheckIn ? () => setShowCheckIn(true) : undefined);
       } else {
         setShowCheckIn(false);
       }
@@ -570,9 +571,15 @@ export default function HomePage() {
           <div>
             <h1 className="text-3xl font-semibold text-white sm:text-4xl">Your daily reset</h1>
           </div>
-          <div className="rounded-3xl bg-white/20 px-4 py-3 text-white ring-1 ring-white/20">
+          <button
+            type="button"
+            onClick={toggleRewardSound}
+            className={`rounded-3xl px-4 py-3 text-white ring-1 ring-white/20 transition hover:bg-white/25 ${rewardSoundEnabled ? 'bg-white/25 shadow-lg shadow-white/10' : 'bg-white/12'}`}
+            aria-label={rewardSoundEnabled ? 'Turn reward sound off' : 'Turn reward sound on'}
+            title={rewardSoundEnabled ? 'Reward sound on' : 'Reward sound off'}
+          >
             <BellRing className="h-6 w-6" />
-          </div>
+          </button>
         </div>
 
         <div className="mt-6 rounded-[30px] border border-white/20 bg-white/10 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur">
@@ -689,17 +696,7 @@ export default function HomePage() {
 
         <div className="app-card rounded-[30px] p-4 text-sm text-slate-600">
           <p className="font-semibold text-slate-800">Status</p>
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <p className="font-medium text-slate-800">{message}</p>
-            <button
-              type="button"
-              onClick={toggleRewardSound}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm transition hover:text-slate-900"
-              aria-label={rewardSoundEnabled ? 'Turn reward sound off' : 'Turn reward sound on'}
-            >
-              {rewardSoundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            </button>
-          </div>
+          <p className="mt-3 font-medium text-slate-800">{message}</p>
         </div>
       </section>
 
