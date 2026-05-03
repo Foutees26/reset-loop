@@ -11,24 +11,36 @@ export const energyTasks: Record<EnergyLevel, string[]> = {
     'Put away 3 things',
     'Clear one tiny surface',
     'Take dishes to the kitchen',
+    'Empty one small bin',
+    'Hang up one item',
+    'Put shoes by the door',
+    'Recycle one piece of rubbish',
+    'Wipe one small spill',
+    'Fold one blanket',
   ],
   medium: [
     'Clear one basket',
     'Sort one chair',
     'Wipe one counter',
+    'Put away clean dishes',
+    'Collect cups from one room',
+    'Sort one laundry pile',
+    'Clear the bedside table',
+    'Take out one rubbish bag',
+    'Reset the sofa',
   ],
   high: [
     'Reset one zone',
     '10-minute tidy',
     'Start a laundry load',
+    'Vacuum one room',
+    'Mop one floor area',
+    'Clean the bathroom sink',
+    'Change the bed sheets',
+    'Tidy the kitchen counters',
+    'Declutter one drawer',
   ],
 };
-
-export function sampleTask(level: EnergyLevel) {
-  const options = energyTasks[level];
-  const index = Math.floor(Math.random() * options.length);
-  return options[index];
-}
 
 export function sampleFromTasks(level: EnergyLevel, extraTasks: string[]) {
   const options = [...energyTasks[level], ...extraTasks];

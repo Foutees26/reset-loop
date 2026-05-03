@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { getOrCreateBrowserUserId } from '../../lib/browserUser';
 import { Bell, CheckCircle2, Plus, Trash2 } from 'lucide-react';
-import { energyLabels, type EnergyLevel } from '../../lib/resetData';
+import { energyLabels, energyTasks, type EnergyLevel } from '../../lib/resetData';
 
 interface Profile {
   id: string;
@@ -28,6 +28,16 @@ export default function SettingsPage() {
   const [newTaskText, setNewTaskText] = useState('');
   const [newTaskEnergy, setNewTaskEnergy] = useState<EnergyLevel>('low');
   const [status, setStatus] = useState('');
+
+  const normalizedNewTask = newTaskText.trim().toLowerCase();
+  const allKnownTaskNames = useMemo(
+    () => new Set([
+      ...Object.values(energyTasks).flat(),
+      ...customTasks.map((task) => task.task_text),
+    ].map((task) => task.trim().toLowerCase())),
+    [customTasks],
+  );
+  const isDuplicateTask = Boolean(normalizedNewTask && allKnownTaskNames.has(normalizedNewTask));
 
   useEffect(() => {
     setUserId(getOrCreateBrowserUserId());
@@ -118,6 +128,10 @@ export default function SettingsPage() {
   async function addCustomTask() {
     const trimmedTask = newTaskText.trim();
     if (!trimmedTask || !userId || !supabase) return;
+    if (isDuplicateTask) {
+      setStatus('That job is already in the suggestion list.');
+      return;
+    }
 
     const client = supabase;
     setStatus('Saving job...');
@@ -213,7 +227,7 @@ export default function SettingsPage() {
         <div className="mb-4">
           <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Jobs</p>
           <h2 className="mt-1 text-xl font-semibold text-slate-950">Suggestion list</h2>
-          <p className="mt-2 text-sm text-slate-600">Add jobs you actually do. They will be mixed into future suggestions for the matching energy level.</p>
+          <p className="mt-2 text-sm text-slate-600">Add jobs you actually do. The full list is shown below so duplicates are easier to spot.</p>
         </div>
 
         <div className="space-y-3">
@@ -224,6 +238,9 @@ export default function SettingsPage() {
             placeholder="Add a job, e.g. Empty bathroom bin"
             className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10"
           />
+          {isDuplicateTask && (
+            <p className="rounded-3xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">That job is already listed.</p>
+          )}
           <div className="grid grid-cols-3 gap-2">
             {(['low', 'medium', 'high'] as EnergyLevel[]).map((level) => (
               <button
@@ -243,7 +260,7 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={addCustomTask}
-            disabled={!newTaskText.trim()}
+            disabled={!newTaskText.trim() || isDuplicateTask}
             className="inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-primary px-5 py-4 text-base font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             <Plus className="h-5 w-5" />
@@ -251,27 +268,45 @@ export default function SettingsPage() {
           </button>
         </div>
 
-        <div className="mt-5 space-y-3">
-          {customTasks.length === 0 ? (
-            <p className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-600">Your custom jobs will appear here.</p>
-          ) : (
-            customTasks.map((task) => (
-              <div key={task.id} className="flex items-center justify-between gap-3 rounded-3xl bg-slate-50 p-4">
-                <div>
-                  <p className="font-semibold text-slate-900">{task.task_text}</p>
-                  <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">{energyLabels[task.energy_level]}</p>
+        <div className="mt-5 space-y-5">
+          {(['low', 'medium', 'high'] as EnergyLevel[]).map((level) => {
+            const customTasksForLevel = customTasks.filter((task) => task.energy_level === level);
+
+            return (
+              <div key={level} className="rounded-3xl bg-slate-50 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-base font-semibold text-slate-950">{energyLabels[level]} energy</h3>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm">
+                    {energyTasks[level].length + customTasksForLevel.length} jobs
+                  </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => deleteCustomTask(task.id)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm transition hover:text-slate-900"
-                  aria-label={`Remove ${task.task_text}`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="space-y-2">
+                  {energyTasks[level].map((task) => (
+                    <div key={task} className="flex items-center justify-between gap-3 rounded-3xl bg-white p-3">
+                      <p className="text-sm font-semibold text-slate-900">{task}</p>
+                      <span className="rounded-full bg-primarySoft px-3 py-1 text-xs font-semibold text-primary">Default</span>
+                    </div>
+                  ))}
+                  {customTasksForLevel.map((task) => (
+                    <div key={task.id} className="flex items-center justify-between gap-3 rounded-3xl bg-white p-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{task.task_text}</p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">Custom</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => deleteCustomTask(task.id)}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-500 transition hover:text-slate-900"
+                        aria-label={`Remove ${task.task_text}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))
-          )}
+            );
+          })}
         </div>
       </section>
 
