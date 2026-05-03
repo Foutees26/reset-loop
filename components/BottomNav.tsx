@@ -5,17 +5,17 @@ import { Home, Activity, Settings } from 'lucide-react';
 
 export default function BottomNav() {
   return (
-    <nav className="sticky bottom-0 z-40 mx-auto w-full max-w-xl border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-md sm:px-6">
-      <div className="mx-auto flex max-w-xl items-center justify-between">
-        <Link href="/dashboard/home" className="flex flex-col items-center gap-1 text-slate-700 hover:text-primary">
+    <nav className="sticky bottom-0 z-40 mx-auto w-full max-w-2xl px-3 pb-3 sm:px-6">
+      <div className="mx-auto flex items-center justify-between rounded-[28px] border border-white/75 bg-white/90 px-5 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)] backdrop-blur-xl">
+        <Link href="/dashboard/home" className="flex min-w-20 flex-col items-center gap-1 rounded-2xl px-3 py-1.5 text-slate-700 transition hover:bg-primarySoft hover:text-primary">
           <Home className="h-5 w-5" />
           <span className="text-[11px] font-semibold">Home</span>
         </Link>
-        <Link href="/progress" className="flex flex-col items-center gap-1 text-slate-700 hover:text-primary">
+        <Link href="/progress" className="flex min-w-20 flex-col items-center gap-1 rounded-2xl px-3 py-1.5 text-slate-700 transition hover:bg-primarySoft hover:text-primary">
           <Activity className="h-5 w-5" />
           <span className="text-[11px] font-semibold">Progress</span>
         </Link>
-        <Link href="/settings" className="flex flex-col items-center gap-1 text-slate-700 hover:text-primary">
+        <Link href="/settings" className="flex min-w-20 flex-col items-center gap-1 rounded-2xl px-3 py-1.5 text-slate-700 transition hover:bg-primarySoft hover:text-primary">
           <Settings className="h-5 w-5" />
           <span className="text-[11px] font-semibold">Settings</span>
         </Link>

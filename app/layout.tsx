@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <main className="min-h-screen">
-          <div className="mx-auto flex min-h-screen max-w-xl flex-col px-4 pb-24 pt-6 sm:px-6">
+          <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-4 pb-28 pt-5 sm:px-6 sm:pt-8">
             {children}
           </div>
           <BottomNav />

@@ -68,8 +68,13 @@ const motivationalQuotes = [
 const rewardMessages = [
   'Nice. That counts.',
   'You showed up.',
-  'That was enough.',
+  'That was great!.',
   'Small win logged.',
+  'Your streak is stronger.',
+  'You did it!',
+  'Every reset matters.',
+  'Each step is progress.',
+  'Every job helps your streak.',
 ];
 
 const idleRewardState: RewardState = {
@@ -78,6 +83,27 @@ const idleRewardState: RewardState = {
   nextStreak: 0,
   message: rewardMessages[0],
   variant: 0,
+};
+
+const energyStyles: Record<EnergyLevel, { active: string; idle: string; badge: string; glow: string }> = {
+  low: {
+    active: 'border-sky-400 bg-sky-500 text-white shadow-lg shadow-sky-500/25',
+    idle: 'border-sky-100 bg-sky-50 text-sky-900 hover:border-sky-300 hover:bg-sky-100',
+    badge: 'bg-sky-100 text-sky-700',
+    glow: 'from-sky-500/20 via-white to-white',
+  },
+  medium: {
+    active: 'border-emerald-400 bg-emerald-500 text-white shadow-lg shadow-emerald-500/25',
+    idle: 'border-emerald-100 bg-emerald-50 text-emerald-900 hover:border-emerald-300 hover:bg-emerald-100',
+    badge: 'bg-emerald-100 text-emerald-700',
+    glow: 'from-emerald-500/20 via-white to-white',
+  },
+  high: {
+    active: 'border-amber-400 bg-amber-500 text-white shadow-lg shadow-amber-500/25',
+    idle: 'border-amber-100 bg-amber-50 text-amber-950 hover:border-amber-300 hover:bg-amber-100',
+    badge: 'bg-amber-100 text-amber-800',
+    glow: 'from-amber-500/20 via-white to-white',
+  },
 };
 
 export default function HomePage() {
@@ -526,48 +552,50 @@ export default function HomePage() {
         </div>
       )}
 
-      <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-card">
+      <section className="hero-panel relative overflow-hidden rounded-[36px] border border-white/30 p-5 text-white sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Reset Loop</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-950">Your daily reset</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/70">Reset Loop</p>
+            <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">Your daily reset</h1>
           </div>
-          <div className="rounded-3xl bg-primarySoft px-4 py-3 text-primary">
+          <div className="rounded-3xl bg-white/20 px-4 py-3 text-white ring-1 ring-white/20">
             <BellRing className="h-6 w-6" />
           </div>
         </div>
 
-        <div className="mt-5 rounded-[28px] border border-primary/30 bg-primary p-5 text-white shadow-lg shadow-primary/25">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/75">Today&apos;s nudge</p>
-          <p className="mt-2 text-3xl font-semibold leading-tight text-white">{quote}</p>
+        <div className="mt-6 rounded-[30px] border border-white/20 bg-white/10 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100/80">Today&apos;s nudge</p>
+          <p className="mt-2 text-3xl font-semibold leading-tight text-white sm:text-[2.45rem]">{quote}</p>
         </div>
 
-        <div className={`mt-5 space-y-3 rounded-3xl bg-slate-50 p-4 transition ${rewardActive ? 'streak-pop ring-2 ring-positive/40' : ''}`}>
+        <div className={`mt-5 space-y-3 rounded-[30px] border border-white/20 bg-white/10 p-4 backdrop-blur transition ${rewardActive ? 'streak-pop ring-2 ring-amber-200/80' : ''}`}>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Streak</p>
-              <p className={`mt-1 text-2xl font-semibold text-slate-900 ${rewardActive ? 'streak-number-roll' : ''}`}>
+              <p className="text-xs uppercase tracking-[0.25em] text-white/60">Streak</p>
+              <p className={`mt-1 text-2xl font-semibold text-white ${rewardActive ? 'streak-number-roll' : ''}`}>
                 {displayedStreak} day{displayedStreak === 1 ? '' : 's'}
               </p>
-              <p className="mt-1 text-xs text-slate-500">{completedJobsToday} job{completedJobsToday === 1 ? '' : 's'} today</p>
+              <p className="mt-1 text-xs text-cyan-100/75">{completedJobsToday} job{completedJobsToday === 1 ? '' : 's'} today</p>
             </div>
-            <div className="rounded-3xl bg-white p-3 text-slate-800 shadow-sm">
+            <div className="rounded-3xl bg-white px-4 py-3 text-slate-900 shadow-sm">
               <p className="text-xs text-slate-500">Freezes left</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">{freezesRemaining}</p>
+              <p className="mt-1 text-lg font-semibold">{freezesRemaining}</p>
             </div>
           </div>
-          <p className="text-sm text-slate-600">Your streak is held together by small resets or pause days. Stay gentle and consistent.</p>
+          <p className="text-sm leading-6 text-white/75">Your streak is held together by small resets or pause days. Stay gentle and consistent.</p>
         </div>
       </section>
 
       <section className="space-y-4">
-        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-card">
+        <div className="app-card rounded-[32px] p-4">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Energy</p>
               <h2 className="mt-1 text-xl font-semibold text-slate-900">Choose how you feel</h2>
             </div>
-            <span className="rounded-full bg-primarySoft px-3 py-1 text-sm text-primary">Tap only</span>
+            <span className={`rounded-full px-3 py-1 text-sm font-semibold ${energyStyles[selectedEnergy].badge}`}>
+              {energyLabels[selectedEnergy]}
+            </span>
           </div>
           <div className="grid grid-cols-3 gap-3">
             {(['low', 'medium', 'high'] as EnergyLevel[]).map((level) => (
@@ -575,11 +603,7 @@ export default function HomePage() {
                 key={level}
                 type="button"
                 onClick={() => pickEnergy(level)}
-                className={`rounded-3xl border px-3 py-4 text-center text-sm font-semibold transition ${
-                  selectedEnergy === level
-                    ? 'border-primary bg-primary text-white shadow-sm'
-                    : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-primary/80 hover:bg-primarySoft'
-                }`}
+                className={`rounded-[24px] border px-3 py-4 text-center text-sm font-semibold transition ${selectedEnergy === level ? energyStyles[level].active : energyStyles[level].idle}`}
               >
                 {energyLabels[level]}
               </button>
@@ -587,13 +611,13 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="rounded-[32px] border border-slate-200 bg-white p-5 shadow-card">
+        <div className={`relative overflow-hidden rounded-[34px] border border-white/75 bg-gradient-to-br ${energyStyles[selectedEnergy].glow} p-5 shadow-card`}>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Today's reset</p>
+              <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Today&apos;s reset</p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">{taskText || 'Pick your energy to get a task'}</h2>
             </div>
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-3xl bg-primarySoft text-primary">
+            <div className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[22px] ${energyStyles[selectedEnergy].badge}`}>
               <Sparkles className="h-6 w-6" />
             </div>
           </div>
@@ -611,7 +635,7 @@ export default function HomePage() {
             type="button"
             onClick={shuffleTask}
             disabled={loading}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-3xl border border-slate-300 bg-slate-50 px-5 py-4 text-base font-semibold text-slate-700 transition hover:border-primary hover:bg-primarySoft disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-[26px] border border-white/75 bg-white/80 px-5 py-4 text-base font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:border-primary/40 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Shuffle className="h-5 w-5" />
             Shuffle job
@@ -620,10 +644,10 @@ export default function HomePage() {
             type="button"
             onClick={handlePrimaryTaskAction}
             disabled={loading || !hasSuggestedTask || !taskText}
-            className={`inline-flex w-full items-center justify-center rounded-3xl px-5 py-4 text-base font-semibold text-white shadow-lg transition disabled:cursor-not-allowed disabled:bg-slate-300 ${
+            className={`inline-flex w-full items-center justify-center rounded-[26px] px-5 py-4 text-base font-semibold text-white shadow-lg transition disabled:cursor-not-allowed disabled:bg-slate-300 ${
               taskCommitted
-                ? 'bg-positive shadow-positive/20 hover:bg-emerald-600'
-                : 'bg-primary shadow-primary/20 hover:bg-blue-600'
+                ? 'bg-positive shadow-positive/25 hover:bg-emerald-600'
+                : 'bg-primary shadow-primary/25 hover:bg-blue-600'
             } ${isPressingDone ? 'done-anticipation' : ''}`}
           >
             {loading ? 'Saving...' : taskCommitted ? 'Done' : completedJobsToday > 0 ? "I'll do another" : "I'll do this"}
@@ -632,15 +656,14 @@ export default function HomePage() {
             type="button"
             onClick={() => saveReset(true)}
             disabled={completedToday || loading || freezesRemaining === 0}
-            className="inline-flex w-full items-center justify-center rounded-3xl border border-slate-300 bg-slate-50 px-5 py-4 text-base font-semibold text-slate-700 transition hover:border-primary hover:bg-primarySoft disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center rounded-[26px] border border-white/75 bg-white/70 px-5 py-4 text-base font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:border-primary/40 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             Use freeze instead
           </button>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-          <p className="font-semibold text-slate-800">What happens next</p>
-          <p className="mt-2">A reset log saves your completion, protects your streak, and offers a calm check-in so you can land the day with encouragement.</p>
+        <div className="app-card rounded-[30px] p-4 text-sm text-slate-600">
+          <p className="font-semibold text-slate-800">Status</p>
           <div className="mt-3 flex items-center justify-between gap-3">
             <p className="font-medium text-slate-800">{message}</p>
             <button
@@ -656,9 +679,9 @@ export default function HomePage() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">
+        <div className="app-card rounded-[30px] p-5">
           <div className="flex items-center gap-3">
-            <div className="rounded-3xl bg-primarySoft p-3 text-primary">
+            <div className="rounded-[22px] bg-emerald-100 p-3 text-emerald-700">
               <CheckCircle2 className="h-5 w-5" />
             </div>
             <div>
@@ -668,9 +691,9 @@ export default function HomePage() {
           </div>
           <p className="mt-3 text-sm text-slate-600">Total resets completed so far. Every small habit matters.</p>
         </div>
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">
+        <div className="app-card rounded-[30px] p-5">
           <div className="flex items-center gap-3">
-            <div className="rounded-3xl bg-primarySoft p-3 text-primary">
+            <div className="rounded-[22px] bg-amber-100 p-3 text-amber-700">
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
@@ -683,7 +706,7 @@ export default function HomePage() {
       </section>
 
       {showNotificationPrompt && (
-        <div className="rounded-3xl border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-card">
+        <div className="app-card rounded-[30px] p-4 text-sm text-slate-700">
           <p className="font-semibold text-slate-900">Notifications</p>
           <p className="mt-2 text-slate-600">Allow browser reminders if you want a gentle nudge. The app keeps reminders to 1-2 per day.</p>
         </div>
