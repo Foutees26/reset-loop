@@ -91,11 +91,13 @@ export default function HomePage() {
   const [message, setMessage] = useState<string>('Pick your energy level and settle into a tiny reset.');
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+  const [taskCommitted, setTaskCommitted] = useState(false);
   const [reward, setReward] = useState<RewardState>(idleRewardState);
   const [isPressingDone, setIsPressingDone] = useState(false);
   const [rewardSoundEnabled, setRewardSoundEnabled] = useState(false);
   const [quote, setQuote] = useState('Small steps still count.');
   const rewardTimers = useRef<number[]>([]);
+  const rewardFinishedCallback = useRef<(() => void) | null>(null);
 
   const todayKey = format(new Date(), 'yyyy-MM-dd');
 
@@ -249,11 +251,13 @@ export default function HomePage() {
     const availableTasks = customTasks.length > 0 ? customTasksForEnergy : energyTasks[level];
     if (availableTasks.length === 0) {
       setTaskText('');
+      setTaskCommitted(false);
       setMessage(`Move or add a ${energyLabels[level].toLowerCase()} energy job in Settings.`);
       return;
     }
     const nextTask = sampleTaskFromList(availableTasks, level);
     setTaskText(nextTask);
+    setTaskCommitted(false);
   }
 
   function pickEnergy(level: EnergyLevel) {
@@ -268,6 +272,7 @@ export default function HomePage() {
     }
     const nextTask = sampleDifferentTaskFromList(customSuggestions, selectedEnergy, taskText);
     setTaskText(nextTask);
+    setTaskCommitted(false);
     setMessage('Shuffled. Pick the job that fits right now.');
   }
 
@@ -311,8 +316,18 @@ export default function HomePage() {
     window.setTimeout(() => context.close(), 700);
   }
 
-  function startRewardSequence(previousStreak: number, nextStreak: number) {
+  function finishRewardSequence() {
     clearRewardTimers();
+    setIsPressingDone(false);
+    setReward(idleRewardState);
+    const callback = rewardFinishedCallback.current;
+    rewardFinishedCallback.current = null;
+    callback?.();
+  }
+
+  function startRewardSequence(previousStreak: number, nextStreak: number, onFinished?: () => void) {
+    clearRewardTimers();
+    rewardFinishedCallback.current = onFinished ?? null;
     const nextMessage = rewardMessages[Math.floor(Math.random() * rewardMessages.length)];
     const variant = Math.floor(Math.random() * 4);
 
@@ -336,14 +351,12 @@ export default function HomePage() {
     }, 1660);
 
     scheduleRewardStep(() => {
-      setReward(idleRewardState);
+      finishRewardSequence();
     }, 2180);
   }
 
   function skipReward() {
-    clearRewardTimers();
-    setIsPressingDone(false);
-    setReward(idleRewardState);
+    finishRewardSequence();
   }
 
   function toggleRewardSound() {
@@ -351,6 +364,29 @@ export default function HomePage() {
     setRewardSoundEnabled(nextValue);
     window.localStorage.setItem('reset_loop_reward_sound', String(nextValue));
     setMessage(nextValue ? 'Reward sound on.' : 'Reward sound off.');
+  }
+
+  function acceptTask() {
+    if (!taskText) {
+      setMessage(`No ${energyLabels[selectedEnergy].toLowerCase()} energy job selected. Add or move one in Settings.`);
+      return;
+    }
+
+    setTaskCommitted(true);
+    triggerHaptic(10);
+    setMessage('You picked it. Come back here when it is done.');
+  }
+
+  function handlePrimaryTaskAction() {
+    if (!taskCommitted) {
+      acceptTask();
+      return;
+    }
+
+    setIsPressingDone(true);
+    triggerHaptic(12);
+    window.setTimeout(() => setIsPressingDone(false), 280);
+    saveReset(false);
   }
 
   async function createProfile(client: NonNullable<typeof supabase>, id: string) {
@@ -399,6 +435,7 @@ export default function HomePage() {
     setMessage(usedFreeze ? 'Saving your pause day...' : 'Saving your reset...');
     const profileReady = await ensureProfile(client);
     if (!profileReady) {
+      setIsPressingDone(false);
       setLoading(false);
       return;
     }
@@ -424,9 +461,11 @@ export default function HomePage() {
         setLogs((currentLogs) => [savedReset as ResetLog, ...currentLogs]);
       }
       if (!usedFreeze) {
-        startRewardSequence(previousStreak, nextStreak);
+        setTaskCommitted(false);
+        startRewardSequence(previousStreak, nextStreak, () => setShowCheckIn(true));
+      } else {
+        setShowCheckIn(false);
       }
-      setShowCheckIn(!usedFreeze);
       const { data: resetItems } = await client
         .from('reset_logs')
         .select('*')
@@ -439,6 +478,7 @@ export default function HomePage() {
       }
     } else {
       setMessage(error.message || 'Unable to save your reset. Please check the Supabase connection and try again.');
+      setIsPressingDone(false);
     }
     setLoading(false);
   }
@@ -558,9 +598,11 @@ export default function HomePage() {
             </div>
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-600">
-            {completedJobsToday > 0
-              ? 'Your streak is safe. Log another job only if it still feels useful.'
-              : 'This tiny task is designed to feel easy and satisfying right now.'}
+            {taskCommitted
+              ? 'Chosen. Mark it done when the job is actually finished.'
+              : completedJobsToday > 0
+                ? 'Your streak is safe. Log another job only if it still feels useful.'
+                : 'This tiny task is designed to feel easy and satisfying right now.'}
           </p>
         </div>
 
@@ -576,11 +618,15 @@ export default function HomePage() {
           </button>
           <button
             type="button"
-            onClick={() => saveReset(false)}
-            disabled={loading || !hasSuggestedTask}
-            className={`inline-flex w-full items-center justify-center rounded-3xl bg-primary px-5 py-4 text-base font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 ${isPressingDone ? 'done-anticipation' : ''}`}
+            onClick={handlePrimaryTaskAction}
+            disabled={loading || !hasSuggestedTask || !taskText}
+            className={`inline-flex w-full items-center justify-center rounded-3xl px-5 py-4 text-base font-semibold text-white shadow-lg transition disabled:cursor-not-allowed disabled:bg-slate-300 ${
+              taskCommitted
+                ? 'bg-positive shadow-positive/20 hover:bg-emerald-600'
+                : 'bg-primary shadow-primary/20 hover:bg-blue-600'
+            } ${isPressingDone ? 'done-anticipation' : ''}`}
           >
-            {loading ? 'Saving...' : completedJobsToday > 0 ? 'Log another job' : 'Done'}
+            {loading ? 'Saving...' : taskCommitted ? 'Done' : completedJobsToday > 0 ? "I'll do another" : "I'll do this"}
           </button>
           <button
             type="button"
