@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { BellRing, Sparkles, CheckCircle2, ShieldCheck, PartyPopper } from 'lucide-react';
+import { BellRing, Sparkles, CheckCircle2, ShieldCheck, PartyPopper, Shuffle } from 'lucide-react';
 import { format, parseISO, startOfWeek, subDays } from 'date-fns';
 import { supabase } from '../../../lib/supabaseClient';
-import { defaultTask, energyLabels, sampleFromTasks, type EnergyLevel } from '../../../lib/resetData';
+import { defaultTask, energyLabels, sampleDifferentTask, sampleFromTasks, type EnergyLevel } from '../../../lib/resetData';
 import { getOrCreateBrowserUserId } from '../../../lib/browserUser';
 import CheckInModal from '../../../components/CheckInModal';
 
@@ -205,6 +205,12 @@ export default function HomePage() {
     makeTask(level);
   }
 
+  function shuffleTask() {
+    const nextTask = sampleDifferentTask(selectedEnergy, customSuggestions, taskText);
+    setTaskText(nextTask);
+    setMessage('Shuffled. Pick the job that fits right now.');
+  }
+
   async function createProfile(client: NonNullable<typeof supabase>, id: string) {
     return client
       .from('users_profile')
@@ -392,6 +398,15 @@ export default function HomePage() {
         </div>
 
         <div className="space-y-3">
+          <button
+            type="button"
+            onClick={shuffleTask}
+            disabled={loading}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-3xl border border-slate-300 bg-slate-50 px-5 py-4 text-base font-semibold text-slate-700 transition hover:border-primary hover:bg-primarySoft disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Shuffle className="h-5 w-5" />
+            Shuffle job
+          </button>
           <button
             type="button"
             onClick={() => saveReset(false)}

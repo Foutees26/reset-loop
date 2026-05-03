@@ -36,6 +36,13 @@ export function sampleFromTasks(level: EnergyLevel, extraTasks: string[]) {
   return options[index];
 }
 
+export function sampleDifferentTask(level: EnergyLevel, extraTasks: string[], currentTask: string) {
+  const options = Array.from(new Set([...energyTasks[level], ...extraTasks]));
+  const nextOptions = options.length > 1 ? options.filter((task) => task !== currentTask) : options;
+  const index = Math.floor(Math.random() * nextOptions.length);
+  return nextOptions[index];
+}
+
 export function defaultTask(level: EnergyLevel) {
   return energyTasks[level][0];
 }
