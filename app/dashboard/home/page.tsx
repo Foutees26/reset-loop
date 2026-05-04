@@ -828,7 +828,7 @@ export default function HomePage() {
       />
 
       {showOnboarding && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/35 px-4 py-6 sm:items-center">
+        <div className="fixed inset-0 z-[60] flex items-start justify-center bg-slate-950/35 px-4 pb-6 pt-14 sm:pt-24">
           <div className="w-full max-w-md rounded-[34px] border border-white/80 bg-white p-5 shadow-[0_28px_80px_rgba(15,23,42,0.24)]">
             <div className="flex items-start justify-between gap-4">
               <div>
