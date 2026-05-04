@@ -7,12 +7,27 @@ import { format, parseISO, startOfWeek, subDays } from 'date-fns';
 import { supabase } from '../../../lib/supabaseClient';
 import { defaultTask, energyLabels, energyTasks, expandedDefaultTasks, sampleDifferentTaskFromList, sampleTaskFromList, type EnergyLevel } from '../../../lib/resetData';
 import { getCurrentBrowserUser, getOrCreateBrowserUserId } from '../../../lib/browserUser';
+import {
+  advanceCalmGrowth,
+  calmGrowthFromTotal,
+  calmGrowthMessages,
+  createPlant,
+  idleCalmGrowthState,
+  normalizeCalmGrowth,
+  type CalmGrowthState,
+} from '../../../lib/calmGrowth';
 import CheckInModal from '../../../components/CheckInModal';
+import CalmGrowthCard from '../../../components/CalmGrowthCard';
 
 interface Profile {
   id: string;
   display_name: string;
   reminder_time: string | null;
+  growth_stage?: number | null;
+  calm_progress?: number | null;
+  calm_growth_total?: number | null;
+  current_plant?: CalmGrowthState['current_plant'] | null;
+  completed_plants?: CalmGrowthState['completed_plants'] | null;
   created_at: string;
 }
 
@@ -39,6 +54,8 @@ interface RewardState {
   stage: RewardStage;
   previousStreak: number;
   nextStreak: number;
+  previousJobsToday: number;
+  nextJobsToday: number;
   message: string;
   variant: number;
 }
@@ -78,6 +95,14 @@ const rewardMessages = [
   'Every job helps your streak.',
 ];
 
+const extraJobRewardMessages = [
+  'Another one done.',
+  'Extra win logged.',
+  'You kept going.',
+  'That extra job counts.',
+  'More momentum today.',
+];
+
 const onboardingStorageKeyPrefix = 'reset_loop_onboarding_seen_';
 const onboardingSteps = [
   {
@@ -111,6 +136,8 @@ const idleRewardState: RewardState = {
   stage: 'idle',
   previousStreak: 0,
   nextStreak: 0,
+  previousJobsToday: 0,
+  nextJobsToday: 0,
   message: rewardMessages[0],
   variant: 0,
 };
@@ -154,6 +181,8 @@ export default function HomePage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [quote, setQuote] = useState('Small steps still count.');
+  const [calmGrowth, setCalmGrowth] = useState<CalmGrowthState>(idleCalmGrowthState);
+  const [calmGrowthCelebrateKey, setCalmGrowthCelebrateKey] = useState(0);
   const rewardTimers = useRef<number[]>([]);
   const rewardFinishedCallback = useRef<(() => void) | null>(null);
 
@@ -186,6 +215,7 @@ export default function HomePage() {
       }
       const client = supabase;
       setLoading(true);
+      let loadedProfile: Profile | null = null;
       const { data: existingProfile, error } = await client
         .from('users_profile')
         .select('*')
@@ -194,19 +224,28 @@ export default function HomePage() {
 
       if (error && !existingProfile) {
         const { data: created, error: createError } = await createProfile(client, userId);
-        if (created) setProfile(created);
+        if (created) {
+          loadedProfile = created as Profile;
+          applyLoadedProfile(loadedProfile);
+        }
         if (createError) setMessage('Unable to create your profile. Check the Supabase schema and connection.');
       } else if (existingProfile) {
         const browserUserName = getCurrentBrowserUser().name;
         if (existingProfile.display_name !== browserUserName) {
           await client.from('users_profile').update({ display_name: browserUserName }).eq('id', userId);
-          setProfile({ ...existingProfile, display_name: browserUserName });
+          loadedProfile = { ...(existingProfile as Profile), display_name: browserUserName };
+          applyLoadedProfile(loadedProfile);
         } else {
-          setProfile(existingProfile);
+          loadedProfile = existingProfile as Profile;
+          applyLoadedProfile(loadedProfile);
         }
       }
 
-      const [{ data: resetItems, error: logsError }, { data: taskItems, error: tasksError }] = await Promise.all([
+      const [
+        { data: resetItems, error: logsError },
+        { data: taskItems, error: tasksError },
+        { count: completedResetCount },
+      ] = await Promise.all([
         client
           .from('reset_logs')
           .select('*')
@@ -218,12 +257,25 @@ export default function HomePage() {
           .select('*')
           .eq('user_id', userId)
           .order('created_at', { ascending: false }),
+        client
+          .from('reset_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('used_freeze', false),
       ]);
 
       const loadedTasks = (taskItems ?? []) as CustomTask[];
       const expandedTasks = await seedExpandedDefaultJobs(client, loadedTasks);
       setLogs((resetItems ?? []) as ResetLog[]);
       setCustomTasks(expandedTasks);
+      if (loadedProfile) {
+        const syncedGrowth = await syncCalmGrowthFromCompletedJobs(
+          client,
+          loadedProfile,
+          completedResetCount ?? (resetItems ?? []).filter((log) => !log.used_freeze).length,
+        );
+        setCalmGrowth(syncedGrowth);
+      }
       if (logsError || tasksError) setMessage('Unable to load reset data. Check the Supabase schema and connection.');
       setLoading(false);
     }
@@ -320,6 +372,29 @@ export default function HomePage() {
   );
   const hasSuggestedTask = customSuggestions.length > 0;
 
+  function applyLoadedProfile(nextProfile: Profile) {
+    setProfile(nextProfile);
+    setCalmGrowth(normalizeCalmGrowth(nextProfile));
+  }
+
+  async function syncCalmGrowthFromCompletedJobs(client: NonNullable<typeof supabase>, currentProfile: Profile, completedResetCount: number) {
+    const currentGrowth = normalizeCalmGrowth(currentProfile);
+    if (currentGrowth.calm_growth_total > 0 || completedResetCount <= 0) return currentGrowth;
+
+    const seededGrowth = calmGrowthFromTotal(completedResetCount);
+    const { data, error } = await client
+      .from('users_profile')
+      .update(seededGrowth)
+      .eq('id', userId)
+      .select('*')
+      .single();
+
+    if (error || !data) return currentGrowth;
+
+    applyLoadedProfile(data as Profile);
+    return normalizeCalmGrowth(data as Profile);
+  }
+
   function makeTask(level: EnergyLevel) {
     const customTasksForEnergy = customTasks
       .filter((item) => item.energy_level === level)
@@ -401,13 +476,23 @@ export default function HomePage() {
     callback?.();
   }
 
-  function startRewardSequence(previousStreak: number, nextStreak: number, onFinished?: () => void) {
+  function startRewardSequence(
+    previousStreak: number,
+    nextStreak: number,
+    previousJobsToday: number,
+    nextJobsToday: number,
+    onFinished?: () => void,
+    preferredMessage?: string,
+  ) {
     clearRewardTimers();
     rewardFinishedCallback.current = onFinished ?? null;
-    const nextMessage = rewardMessages[Math.floor(Math.random() * rewardMessages.length)];
+    const messagePool = nextJobsToday > 1
+      ? [...extraJobRewardMessages, ...calmGrowthMessages]
+      : [...rewardMessages, ...calmGrowthMessages];
+    const nextMessage = preferredMessage ?? messagePool[Math.floor(Math.random() * messagePool.length)];
     const variant = Math.floor(Math.random() * 4);
 
-    setReward({ stage: 'anticipation', previousStreak, nextStreak, message: nextMessage, variant });
+    setReward({ stage: 'anticipation', previousStreak, nextStreak, previousJobsToday, nextJobsToday, message: nextMessage, variant });
     setIsPressingDone(true);
     triggerHaptic(18);
 
@@ -511,7 +596,13 @@ export default function HomePage() {
   async function createProfile(client: NonNullable<typeof supabase>, id: string) {
     return client
       .from('users_profile')
-      .upsert({ id, display_name: getCurrentBrowserUser().name, reminder_time: null }, { onConflict: 'id', ignoreDuplicates: true })
+      .upsert({
+        id,
+        display_name: getCurrentBrowserUser().name,
+        reminder_time: null,
+        current_plant: createPlant(undefined, 0),
+        completed_plants: [],
+      }, { onConflict: 'id', ignoreDuplicates: true })
       .select()
       .single();
   }
@@ -526,18 +617,37 @@ export default function HomePage() {
       .single();
 
     if (existingProfile) {
-      setProfile(existingProfile as Profile);
+      applyLoadedProfile(existingProfile as Profile);
       return true;
     }
 
     const { data: created, error } = await createProfile(client, userId);
     if (created) {
-      setProfile(created as Profile);
+      applyLoadedProfile(created as Profile);
       return true;
     }
 
     setMessage(error?.message ?? 'Unable to create your profile. Check the Supabase schema and connection.');
     return false;
+  }
+
+  async function saveCalmGrowthProgress(client: NonNullable<typeof supabase>) {
+    const growthResult = advanceCalmGrowth(calmGrowth);
+    setCalmGrowth(growthResult.next);
+    setCalmGrowthCelebrateKey((currentKey) => currentKey + 1);
+
+    const { data, error } = await client
+      .from('users_profile')
+      .update(growthResult.next)
+      .eq('id', userId)
+      .select('*')
+      .single();
+
+    if (!error && data) {
+      applyLoadedProfile(data as Profile);
+    }
+
+    return growthResult;
   }
 
   async function saveReset(usedFreeze = false) {
@@ -549,6 +659,8 @@ export default function HomePage() {
     }
     const previousStreak = streak;
     const nextStreak = !usedFreeze && !completedToday ? streak + 1 : streak;
+    const previousJobsToday = completedJobsToday;
+    const nextJobsToday = usedFreeze ? completedJobsToday : completedJobsToday + 1;
     const shouldOfferCheckIn = !usedFreeze && completedJobsToday === 0;
     const client = supabase;
     setLoading(true);
@@ -570,9 +682,12 @@ export default function HomePage() {
     }).select()
       .single();
     if (!error) {
+      const growthResult = !usedFreeze ? await saveCalmGrowthProgress(client) : null;
       setMessage(
         usedFreeze
           ? 'Nice choice. Your streak is protected while you rest today.'
+          : growthResult?.didAdvanceStage
+            ? 'Reset saved. Your Growing Space moved forward.'
           : completedJobsToday > 0
             ? 'Another job logged. Good momentum, still gentle.'
             : 'Reset complete. Your streak just grew - nice work.',
@@ -582,7 +697,14 @@ export default function HomePage() {
       }
       if (!usedFreeze) {
         setTaskCommitted(false);
-        startRewardSequence(previousStreak, nextStreak, shouldOfferCheckIn ? () => setShowCheckIn(true) : undefined);
+        startRewardSequence(
+          previousStreak,
+          nextStreak,
+          previousJobsToday,
+          nextJobsToday,
+          shouldOfferCheckIn ? () => setShowCheckIn(true) : undefined,
+          growthResult?.message,
+        );
       } else {
         setShowCheckIn(false);
       }
@@ -641,11 +763,24 @@ export default function HomePage() {
                 className="h-12 w-12 object-contain"
               />
             </div>
-            <p className="reward-eyebrow">Streak impact</p>
-            <div className="reward-streak-row">
-              <span className="reward-streak-old">{reward.previousStreak}</span>
-              <span className="reward-streak-number">{reward.nextStreak}</span>
-              <Flame className="reward-flame h-8 w-8" />
+            <p className="reward-eyebrow">Daily impact</p>
+            <div className="reward-impact-grid">
+              <div className="reward-impact-item">
+                <span className="reward-impact-label">Streak</span>
+                <div className="reward-streak-row">
+                  {reward.nextStreak > reward.previousStreak && <span className="reward-streak-old">{reward.previousStreak}</span>}
+                  <span className="reward-streak-number">{reward.nextStreak}</span>
+                  <Flame className="reward-flame h-8 w-8" />
+                </div>
+              </div>
+              <div className="reward-impact-item reward-impact-item-positive">
+                <span className="reward-impact-label">Jobs today</span>
+                <div className="reward-streak-row">
+                  {reward.previousJobsToday > 0 && <span className="reward-streak-old">{reward.previousJobsToday}</span>}
+                  <span className="reward-job-number">{reward.nextJobsToday}</span>
+                  <CheckCircle2 className="reward-check h-8 w-8" />
+                </div>
+              </div>
             </div>
             <p className="reward-message">{reward.message}</p>
           </div>
@@ -690,6 +825,8 @@ export default function HomePage() {
           <p className="text-sm leading-6 text-white/75">Your streak is held together by small resets or pause days. Stay gentle and consistent.</p>
         </div>
       </section>
+
+      <CalmGrowthCard growth={calmGrowth} celebrateKey={calmGrowthCelebrateKey} showCollection={false} />
 
       <section className="space-y-4">
         <div className="app-card rounded-[30px] p-4 text-sm text-slate-600">

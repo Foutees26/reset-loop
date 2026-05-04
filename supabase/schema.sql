@@ -5,11 +5,31 @@ create table if not exists users_profile (
   display_name text not null,
   reminder_time text,
   jobs_seeded boolean default false not null,
+  growth_stage integer default 0 not null,
+  calm_progress integer default 0 not null,
+  calm_growth_total integer default 0 not null,
+  current_plant jsonb default '{"id":"plant-fern-0","stage":0,"progress":0,"type":"fern","completed":false}'::jsonb not null,
+  completed_plants jsonb default '[]'::jsonb not null,
   created_at timestamp with time zone default now() not null
 );
 
 alter table users_profile
   add column if not exists jobs_seeded boolean default false not null;
+
+alter table users_profile
+  add column if not exists growth_stage integer default 0 not null;
+
+alter table users_profile
+  add column if not exists calm_progress integer default 0 not null;
+
+alter table users_profile
+  add column if not exists calm_growth_total integer default 0 not null;
+
+alter table users_profile
+  add column if not exists current_plant jsonb default '{"id":"plant-fern-0","stage":0,"progress":0,"type":"fern","completed":false}'::jsonb not null;
+
+alter table users_profile
+  add column if not exists completed_plants jsonb default '[]'::jsonb not null;
 
 create table if not exists reset_logs (
   id uuid primary key default gen_random_uuid(),

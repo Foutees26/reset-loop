@@ -52,6 +52,557 @@ button, input, select {
   box-shadow: 0 28px 70px rgba(38, 91, 170, 0.26);
 }
 
+.calm-space-hero {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(125, 211, 252, 0.36), transparent 34%),
+    radial-gradient(circle at 82% 20%, rgba(187, 247, 208, 0.5), transparent 32%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(236, 253, 245, 0.78));
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.1);
+}
+
+.calm-space-page-panel {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(240, 253, 250, 0.62));
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.11);
+}
+
+.calm-growth-card {
+  background:
+    linear-gradient(145deg, rgba(236, 253, 245, 0.92) 0%, rgba(255, 255, 255, 0.92) 54%, rgba(239, 246, 255, 0.94) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+
+.calm-growth-card::before {
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.18), rgba(91, 141, 255, 0.12));
+  border-radius: 999px;
+  content: '';
+  height: 150px;
+  position: absolute;
+  right: -70px;
+  top: -88px;
+  width: 150px;
+}
+
+.calm-growth-card-compact {
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+}
+
+.calm-growth-icon {
+  align-items: center;
+  background: #d1fae5;
+  border-radius: 22px;
+  color: #047857;
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  position: relative;
+  width: 44px;
+  z-index: 1;
+}
+
+.watercolor-plant {
+  display: block;
+  filter: drop-shadow(0 12px 18px rgba(15, 23, 42, 0.1));
+  height: 150px;
+  overflow: visible;
+  width: 132px;
+  will-change: transform, opacity;
+}
+
+.watercolor-plant-shelf {
+  height: 112px;
+  width: 98px;
+}
+
+.calm-space-scene {
+  background:
+    radial-gradient(circle at 22% 20%, rgba(186, 230, 253, 0.42), transparent 34%),
+    radial-gradient(circle at 78% 24%, rgba(187, 247, 208, 0.42), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(240, 253, 250, 0.74));
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 32px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  min-height: 132px;
+  overflow: hidden;
+  padding: 16px 14px 18px;
+  position: relative;
+}
+
+.calm-space-scene-immersive {
+  min-height: 560px;
+  padding: 24px 18px 34px;
+}
+
+.calm-space-wash {
+  border-radius: 999px;
+  filter: blur(18px);
+  opacity: 0.5;
+  position: absolute;
+  pointer-events: none;
+}
+
+.calm-space-wash-one {
+  background: rgba(125, 211, 252, 0.38);
+  height: 190px;
+  left: -86px;
+  top: -70px;
+  width: 190px;
+}
+
+.calm-space-wash-two {
+  background: rgba(252, 211, 77, 0.2);
+  bottom: 24px;
+  height: 210px;
+  right: -104px;
+  width: 210px;
+}
+
+.calm-space-window-frame {
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 26px;
+  inset: 12px 14px 34px;
+  position: absolute;
+}
+
+.calm-space-window-frame::before {
+  background: rgba(255, 255, 255, 0.35);
+  content: '';
+  height: 100%;
+  left: 50%;
+  position: absolute;
+  top: 0;
+  width: 1px;
+}
+
+.calm-space-current {
+  align-items: center;
+  bottom: 88px;
+  display: flex;
+  justify-content: center;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
+  width: 150px;
+  z-index: 3;
+}
+
+.calm-space-scene-immersive .calm-space-current {
+  bottom: 138px;
+}
+
+.calm-space-shelf {
+  align-items: flex-end;
+  border-bottom: 12px solid rgba(154, 101, 61, 0.28);
+  bottom: 22px;
+  display: flex;
+  gap: 0;
+  left: 18px;
+  min-height: 104px;
+  overflow: hidden;
+  padding: 0 8px 6px;
+  position: absolute;
+  right: 18px;
+  z-index: 2;
+}
+
+.calm-space-scene-immersive .calm-space-shelf {
+  min-height: 142px;
+}
+
+.calm-space-collected {
+  flex: 0 0 clamp(42px, 11vw, 60px);
+  transform-origin: center bottom;
+  will-change: transform, opacity;
+}
+
+.calm-space-empty {
+  align-self: center;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 auto 18px;
+  position: relative;
+  z-index: 1;
+}
+
+.growing-space-window {
+  background:
+    linear-gradient(180deg, rgba(219, 234, 254, 0.72), rgba(236, 253, 245, 0.52)),
+    rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 30px;
+  min-height: 122px;
+  overflow: hidden;
+  padding: 18px 14px 14px;
+  position: relative;
+}
+
+.growing-space-window::before {
+  background: rgba(255, 255, 255, 0.46);
+  content: '';
+  height: 100%;
+  left: 50%;
+  position: absolute;
+  top: 0;
+  width: 1px;
+}
+
+.growing-space-shelf {
+  align-items: flex-end;
+  border-bottom: 10px solid rgba(164, 108, 63, 0.36);
+  display: flex;
+  gap: 6px;
+  min-height: 94px;
+  overflow: hidden;
+  padding: 0 4px 7px;
+  position: relative;
+  z-index: 1;
+}
+
+.growing-space-empty {
+  align-self: center;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 auto;
+}
+
+.growing-space-collected-plant {
+  flex: 0 0 48px;
+  height: 74px;
+  position: relative;
+}
+
+.growing-current-plant {
+  height: 132px;
+  width: 122px;
+}
+
+.calm-plant-wrap {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 30px;
+  display: flex;
+  justify-content: center;
+  min-height: 150px;
+  position: relative;
+}
+
+.calm-plant {
+  height: 132px;
+  position: relative;
+  width: 122px;
+}
+
+.calm-plant-shelf {
+  bottom: -42px;
+  left: -37px;
+  position: absolute;
+  transform: scale(0.54);
+  transform-origin: center bottom;
+}
+
+.calm-soil {
+  background: linear-gradient(180deg, #d6a66f, #a46c3f);
+  border-radius: 999px;
+  bottom: 15px;
+  box-shadow: inset 0 3px 8px rgba(120, 53, 15, 0.22);
+  height: 19px;
+  left: 17px;
+  position: absolute;
+  width: 88px;
+}
+
+.calm-seed {
+  background: linear-gradient(145deg, #b7793f, #7c4a28);
+  border-radius: 999px 999px 999px 40px;
+  bottom: 28px;
+  height: 24px;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%) rotate(-18deg);
+  width: 18px;
+}
+
+.calm-stem {
+  background: linear-gradient(180deg, #34d399, #059669);
+  border-radius: 999px;
+  bottom: 31px;
+  height: 54px;
+  left: 58px;
+  position: absolute;
+  transform-origin: bottom center;
+  width: 8px;
+}
+
+.calm-plant-stage-2 .calm-stem {
+  height: 70px;
+}
+
+.calm-plant-stage-3 .calm-stem,
+.calm-plant-stage-4 .calm-stem {
+  height: 88px;
+}
+
+.calm-leaf {
+  background: linear-gradient(145deg, #86efac, #10b981);
+  border-radius: 999px 999px 999px 18px;
+  box-shadow: 0 7px 16px rgba(16, 185, 129, 0.18);
+  height: 22px;
+  left: 50%;
+  position: absolute;
+  transform-origin: center right;
+  width: 38px;
+}
+
+.calm-plant-type-pothos .calm-leaf {
+  background: linear-gradient(145deg, #bbf7d0, #22c55e);
+  border-radius: 999px 999px 28px 999px;
+}
+
+.calm-plant-type-peace-lily .calm-leaf {
+  background: linear-gradient(145deg, #dcfce7, #16a34a);
+}
+
+.calm-plant-type-rubber-plant .calm-leaf {
+  background: linear-gradient(145deg, #86efac, #047857);
+}
+
+.calm-plant-type-calathea .calm-leaf {
+  background: linear-gradient(145deg, #a7f3d0, #14b8a6);
+}
+
+.calm-plant-type-monstera .calm-leaf {
+  background: linear-gradient(145deg, #bbf7d0, #059669);
+  border-radius: 999px 999px 999px 8px;
+  width: 46px;
+}
+
+.calm-plant-family-flower .calm-stem {
+  background: linear-gradient(180deg, #86efac, #16a34a);
+  width: 6px;
+}
+
+.calm-plant-type-sunflower .calm-bloom {
+  background:
+    radial-gradient(circle at 50% 50%, #78350f 0 24%, transparent 25%),
+    conic-gradient(#facc15 0 10%, #f59e0b 10% 20%, #facc15 20% 30%, #f59e0b 30% 40%, #facc15 40% 50%, #f59e0b 50% 60%, #facc15 60% 70%, #f59e0b 70% 80%, #facc15 80% 90%, #f59e0b 90% 100%);
+  height: 34px;
+  left: 44px;
+  top: 0;
+  width: 34px;
+}
+
+.calm-plant-type-daisy .calm-bloom {
+  background:
+    radial-gradient(circle at 50% 50%, #facc15 0 18%, transparent 19%),
+    conic-gradient(#fff 0 12%, #e0f2fe 12% 24%, #fff 24% 36%, #e0f2fe 36% 48%, #fff 48% 60%, #e0f2fe 60% 72%, #fff 72% 84%, #e0f2fe 84% 100%);
+}
+
+.calm-plant-type-tulip .calm-bloom {
+  background: linear-gradient(145deg, #fb7185, #e11d48);
+  border-radius: 999px 999px 70% 70%;
+  height: 32px;
+  left: 45px;
+  top: 3px;
+  width: 32px;
+}
+
+.calm-plant-type-lavender .calm-bloom {
+  background: linear-gradient(180deg, #c4b5fd, #8b5cf6);
+  border-radius: 999px;
+  box-shadow:
+    -8px 10px 0 -4px #a78bfa,
+    8px 16px 0 -4px #8b5cf6,
+    0 22px 0 -5px #7c3aed;
+  height: 17px;
+  left: 52px;
+  top: 0;
+  width: 17px;
+}
+
+.calm-plant-family-cactus .calm-stem {
+  background: linear-gradient(180deg, #34d399, #047857);
+  border-radius: 999px 999px 18px 18px;
+  left: 51px;
+  width: 20px;
+}
+
+.calm-plant-family-cactus .calm-leaf {
+  display: none;
+}
+
+.calm-plant-type-aloe .calm-stem {
+  display: none;
+}
+
+.calm-plant-type-aloe .calm-leaf {
+  background: linear-gradient(145deg, #99f6e4, #0f766e);
+  border-radius: 999px 999px 8px 8px;
+  bottom: 34px;
+  display: block;
+  height: 52px;
+  width: 18px;
+}
+
+.calm-plant-type-aloe .calm-leaf-left {
+  transform: translateX(-27px) rotate(-28deg);
+}
+
+.calm-plant-type-aloe .calm-leaf-right {
+  transform: translateX(9px) rotate(28deg);
+}
+
+.calm-cactus-arm {
+  background: linear-gradient(180deg, #34d399, #047857);
+  border-radius: 999px;
+  bottom: 58px;
+  height: 32px;
+  position: absolute;
+  width: 11px;
+}
+
+.calm-cactus-arm-left {
+  left: 40px;
+  transform: rotate(-34deg);
+}
+
+.calm-cactus-arm-right {
+  right: 40px;
+  transform: rotate(34deg);
+}
+
+.calm-plant-type-aloe .calm-cactus-arm {
+  display: none;
+}
+
+.calm-plant-family-tree .calm-stem {
+  background: linear-gradient(180deg, #a16207, #7c2d12);
+  border-radius: 999px 999px 8px 8px;
+  left: 55px;
+  width: 12px;
+}
+
+.calm-plant-family-tree .calm-leaf,
+.calm-plant-family-tree .calm-bloom {
+  display: none;
+}
+
+.calm-canopy {
+  background: linear-gradient(145deg, #86efac, #15803d);
+  border-radius: 999px;
+  box-shadow: 0 9px 18px rgba(21, 128, 61, 0.18);
+  height: 50px;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
+  width: 66px;
+}
+
+.calm-canopy-low {
+  bottom: 58px;
+}
+
+.calm-canopy-mid {
+  bottom: 80px;
+  height: 58px;
+  width: 78px;
+}
+
+.calm-canopy-top {
+  bottom: 104px;
+  height: 42px;
+  width: 58px;
+}
+
+.calm-plant-type-pine .calm-canopy {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  border-radius: 8px;
+}
+
+.calm-plant-type-bonsai .calm-canopy {
+  background: linear-gradient(145deg, #bbf7d0, #16a34a);
+  border-radius: 55% 45% 58% 42%;
+}
+
+.calm-plant-type-peace-lily .calm-bloom {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0 24%, #fef3c7 25% 54%, #f59e0b 55% 100%);
+}
+
+.calm-plant-type-calathea .calm-bloom {
+  background: radial-gradient(circle at 35% 30%, #fce7f3 0 20%, #f472b6 21% 54%, #db2777 55% 100%);
+}
+
+.calm-leaf-left {
+  transform: translateX(-39px) rotate(-32deg);
+}
+
+.calm-leaf-right {
+  border-radius: 999px 999px 18px 999px;
+  transform: translateX(4px) rotate(32deg);
+}
+
+.calm-leaf-small {
+  bottom: 62px;
+}
+
+.calm-leaf-mid {
+  bottom: 82px;
+  height: 25px;
+  width: 44px;
+}
+
+.calm-leaf-wide {
+  bottom: 102px;
+  height: 28px;
+  width: 52px;
+}
+
+.calm-bloom {
+  background: radial-gradient(circle at 35% 30%, #fef3c7 0 18%, #fbbf24 19% 50%, #f59e0b 51% 100%);
+  border-radius: 999px;
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.36);
+  height: 24px;
+  left: 49px;
+  position: absolute;
+  top: 8px;
+  width: 24px;
+}
+
+.calm-meter-track {
+  background: rgba(226, 232, 240, 0.78);
+  border-radius: 999px;
+  height: 14px;
+  overflow: hidden;
+  position: relative;
+}
+
+.calm-meter-fill,
+.calm-meter-pulse {
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+}
+
+.calm-meter-fill {
+  background: linear-gradient(90deg, #38bdf8, #34d399, #facc15);
+  box-shadow: 0 0 18px rgba(52, 211, 153, 0.34);
+}
+
+.calm-meter-pulse {
+  background: linear-gradient(90deg, rgba(125, 211, 252, 0.65), rgba(52, 211, 153, 0.9), rgba(250, 204, 21, 0.75));
+  box-shadow: 0 0 28px rgba(52, 211, 153, 0.5);
+}
+
 .confetti-piece {
   position: absolute;
   top: 12%;
@@ -95,7 +646,7 @@ button, input, select {
   position: fixed;
   left: 50%;
   top: 42%;
-  width: min(86vw, 340px);
+  width: min(90vw, 380px);
   border: 1px solid rgba(91, 141, 255, 0.2);
   border-radius: 32px;
   background: rgba(255, 255, 255, 0.96);
@@ -144,31 +695,68 @@ button, input, select {
 .reward-streak-row {
   align-items: center;
   display: flex;
-  gap: 12px;
+  gap: 8px;
   justify-content: center;
   margin-top: 10px;
 }
 
+.reward-impact-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.reward-impact-item {
+  border-radius: 24px;
+  background: #f8fafc;
+  padding: 12px 10px;
+}
+
+.reward-impact-item-positive {
+  background: #ecfdf5;
+}
+
+.reward-impact-label {
+  color: #64748b;
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
 .reward-streak-old {
   color: #94a3b8;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   text-decoration: line-through;
 }
 
-.reward-streak-number {
+.reward-streak-number,
+.reward-job-number {
   animation: reward-number-flip 620ms cubic-bezier(0.18, 0.9, 0.25, 1.25);
   color: #0f172a;
   display: inline-block;
-  font-size: 58px;
+  font-size: 48px;
   font-weight: 800;
   line-height: 1;
+}
+
+.reward-job-number {
+  color: #047857;
 }
 
 .reward-flame {
   animation: flame-pulse 720ms cubic-bezier(0.2, 0.85, 0.25, 1.15) infinite alternate;
   color: #f59e0b;
   filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.32));
+}
+
+.reward-check {
+  animation: flame-pulse 720ms cubic-bezier(0.2, 0.85, 0.25, 1.15) infinite alternate;
+  color: #10b981;
+  filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.28));
 }
 
 .reward-message {
@@ -327,7 +915,12 @@ button, input, select {
   .reward-card,
   .reward-logo,
   .reward-streak-number,
-  .reward-flame {
+  .reward-job-number,
+  .reward-check,
+  .reward-flame,
+  .calm-plant,
+  .calm-meter-fill,
+  .calm-meter-pulse {
     animation-duration: 1ms;
     animation-iteration-count: 1;
   }

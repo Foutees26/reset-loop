@@ -6,6 +6,19 @@ import { supabase } from '../../lib/supabaseClient';
 import { getCurrentBrowserUser, getOrCreateBrowserUserId } from '../../lib/browserUser';
 import { CheckCircle2, TrendingUp, CalendarDays, HeartPulse, Trash2 } from 'lucide-react';
 import CheckInModal from '../../components/CheckInModal';
+import CalmGrowthCard from '../../components/CalmGrowthCard';
+import { createPlant, idleCalmGrowthState, normalizeCalmGrowth, type CalmGrowthState } from '../../lib/calmGrowth';
+
+interface Profile {
+  id: string;
+  display_name: string;
+  reminder_time: string | null;
+  growth_stage?: number | null;
+  calm_progress?: number | null;
+  calm_growth_total?: number | null;
+  current_plant?: CalmGrowthState['current_plant'] | null;
+  completed_plants?: CalmGrowthState['completed_plants'] | null;
+}
 
 interface ResetLog {
   id: string;
@@ -41,6 +54,7 @@ export default function ProgressPage() {
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [deleteStatus, setDeleteStatus] = useState('');
   const [deletingResetId, setDeletingResetId] = useState<string | null>(null);
+  const [calmGrowth, setCalmGrowth] = useState<CalmGrowthState>(idleCalmGrowthState);
 
   useEffect(() => {
     setUserId(getOrCreateBrowserUserId());
@@ -55,7 +69,11 @@ export default function ProgressPage() {
     const client = supabase;
     async function load() {
       setLoading(true);
-      const [{ data: resetData, error: resetError }, { data: checkInData, error: checkInError }] = await Promise.all([
+      const [
+        { data: resetData, error: resetError },
+        { data: checkInData, error: checkInError },
+        { data: profileData },
+      ] = await Promise.all([
         client
           .from('reset_logs')
           .select('*')
@@ -68,9 +86,15 @@ export default function ProgressPage() {
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
           .limit(30),
+        client
+          .from('users_profile')
+          .select('*')
+          .eq('id', userId)
+          .single(),
       ]);
       setLogs((resetData ?? []) as ResetLog[]);
       setCheckIns((checkInData ?? []) as CheckIn[]);
+      setCalmGrowth(normalizeCalmGrowth(profileData as Profile | null));
       setStatus(resetError || checkInError ? 'Unable to load your progress data. Check the Supabase schema and connection.' : '');
       setLoading(false);
     }
@@ -135,7 +159,7 @@ export default function ProgressPage() {
     const { error } = await client
       .from('users_profile')
       .upsert(
-        { id: userId, display_name: getCurrentBrowserUser().name, reminder_time: null },
+        { id: userId, display_name: getCurrentBrowserUser().name, reminder_time: null, current_plant: createPlant(undefined, 0), completed_plants: [] },
         { onConflict: 'id', ignoreDuplicates: true },
       );
 
@@ -231,6 +255,8 @@ export default function ProgressPage() {
         </div>
         <p className="mt-4 text-sm leading-6 text-slate-600">A calm view of your completed resets, protected streak choices, and recent momentum.</p>
       </section>
+
+      <CalmGrowthCard growth={calmGrowth} compact />
 
       <section className="grid gap-4 md:grid-cols-2">
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">

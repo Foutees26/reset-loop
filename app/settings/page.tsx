@@ -6,6 +6,7 @@ import { createBrowserUser, getBrowserUsers, getCurrentBrowserUser, getOrCreateB
 import { Bell, CheckCircle2, GripVertical, Pencil, Plus, Save, Trash2, UserPlus, Users, X } from 'lucide-react';
 import { energyLabels, energyTasks, expandedDefaultTasks, type EnergyLevel } from '../../lib/resetData';
 import { hasNativeLocalNotifications, requestReminderPermission, scheduleDailyReminder } from '../../lib/notifications';
+import { createPlant } from '../../lib/calmGrowth';
 
 interface Profile {
   id: string;
@@ -83,7 +84,7 @@ export default function SettingsPage() {
       } else if (error) {
         const { data: created, error: createError } = await client
           .from('users_profile')
-          .insert({ id: userId, display_name: browserUserName, reminder_time: null, jobs_seeded: false })
+          .insert({ id: userId, display_name: browserUserName, reminder_time: null, jobs_seeded: false, current_plant: createPlant(undefined, 0), completed_plants: [] })
           .select()
           .single();
         if (created) {
@@ -183,7 +184,7 @@ export default function SettingsPage() {
 
     const { data: created, error } = await client
       .from('users_profile')
-      .insert({ id: userId, display_name: activeBrowserUser?.name ?? 'Friend', reminder_time: null, jobs_seeded: false })
+      .insert({ id: userId, display_name: activeBrowserUser?.name ?? 'Friend', reminder_time: null, jobs_seeded: false, current_plant: createPlant(undefined, 0), completed_plants: [] })
       .select()
       .single();
     if (created) {
