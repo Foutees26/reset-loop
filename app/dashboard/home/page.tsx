@@ -78,6 +78,35 @@ const rewardMessages = [
   'Every job helps your streak.',
 ];
 
+const onboardingStorageKeyPrefix = 'reset_loop_onboarding_seen_';
+const onboardingSteps = [
+  {
+    eyebrow: 'Step 1',
+    title: 'Choose your energy',
+    body: 'Pick Low, Medium, or High based on what feels realistic today.',
+  },
+  {
+    eyebrow: 'Step 2',
+    title: 'Pick one job',
+    body: 'Use the suggested reset or tap the logo/shuffle button until one fits.',
+  },
+  {
+    eyebrow: 'Step 3',
+    title: 'Commit, then finish',
+    body: 'Tap "I\'ll do this" first. After the job is actually done, come back and tap "Done".',
+  },
+  {
+    eyebrow: 'Step 4',
+    title: 'Track how you feel',
+    body: 'After the first completed job of the day, a quick check-in can help show your patterns in Progress.',
+  },
+  {
+    eyebrow: 'Step 5',
+    title: 'Make it yours',
+    body: 'Settings lets each account edit, delete, add, and move jobs into the right energy level.',
+  },
+];
+
 const idleRewardState: RewardState = {
   stage: 'idle',
   previousStreak: 0,
@@ -122,6 +151,8 @@ export default function HomePage() {
   const [reward, setReward] = useState<RewardState>(idleRewardState);
   const [isPressingDone, setIsPressingDone] = useState(false);
   const [rewardSoundEnabled, setRewardSoundEnabled] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
   const [quote, setQuote] = useState('Small steps still count.');
   const rewardTimers = useRef<number[]>([]);
   const rewardFinishedCallback = useRef<(() => void) | null>(null);
@@ -134,6 +165,16 @@ export default function HomePage() {
     setQuote(motivationalQuotes[quoteIndex]);
     setRewardSoundEnabled(window.localStorage.getItem('reset_loop_reward_sound') === 'true');
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const onboardingSeen = window.localStorage.getItem(`${onboardingStorageKeyPrefix}${userId}`);
+    if (!onboardingSeen) {
+      setOnboardingStep(0);
+      setShowOnboarding(true);
+    }
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -401,6 +442,22 @@ export default function HomePage() {
     setMessage(nextValue ? 'Reward sound on.' : 'Reward sound off.');
   }
 
+  function closeOnboarding() {
+    if (!userId) return;
+    window.localStorage.setItem(`${onboardingStorageKeyPrefix}${userId}`, 'true');
+    setShowOnboarding(false);
+    setOnboardingStep(0);
+  }
+
+  function nextOnboardingStep() {
+    if (onboardingStep >= onboardingSteps.length - 1) {
+      closeOnboarding();
+      return;
+    }
+
+    setOnboardingStep((currentStep) => currentStep + 1);
+  }
+
   async function seedExpandedDefaultJobs(client: NonNullable<typeof supabase>, currentTasks: CustomTask[]) {
     if (currentTasks.length === 0) return currentTasks;
 
@@ -635,6 +692,11 @@ export default function HomePage() {
       </section>
 
       <section className="space-y-4">
+        <div className="app-card rounded-[30px] p-4 text-sm text-slate-600">
+          <p className="font-semibold text-slate-800">Status</p>
+          <p className="mt-3 font-medium text-slate-800">{message}</p>
+        </div>
+
         <div className="app-card rounded-[32px] p-4">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
@@ -723,10 +785,6 @@ export default function HomePage() {
           </button>
         </div>
 
-        <div className="app-card rounded-[30px] p-4 text-sm text-slate-600">
-          <p className="font-semibold text-slate-800">Status</p>
-          <p className="mt-3 font-medium text-slate-800">{message}</p>
-        </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
@@ -768,6 +826,56 @@ export default function HomePage() {
         onClose={() => setShowCheckIn(false)}
         onSubmit={saveCheckIn}
       />
+
+      {showOnboarding && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/35 px-4 py-6 sm:items-center">
+          <div className="w-full max-w-md rounded-[34px] border border-white/80 bg-white p-5 shadow-[0_28px_80px_rgba(15,23,42,0.24)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-primary">{onboardingSteps[onboardingStep].eyebrow}</p>
+                <h2 className="mt-2 text-2xl font-semibold text-slate-950">{onboardingSteps[onboardingStep].title}</h2>
+              </div>
+              <button
+                type="button"
+                onClick={closeOnboarding}
+                className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600 transition hover:bg-slate-200"
+              >
+                Skip
+              </button>
+            </div>
+
+            <p className="mt-4 text-base leading-7 text-slate-600">{onboardingSteps[onboardingStep].body}</p>
+
+            <div className="mt-6 flex items-center justify-between gap-3">
+              <div className="flex gap-2">
+                {onboardingSteps.map((step, index) => (
+                  <span
+                    key={step.title}
+                    className={`h-2.5 rounded-full transition-all ${index === onboardingStep ? 'w-8 bg-primary' : 'w-2.5 bg-slate-200'}`}
+                  />
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setOnboardingStep((currentStep) => Math.max(0, currentStep - 1))}
+                  disabled={onboardingStep === 0}
+                  className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary/50 hover:bg-primarySoft disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={nextOnboardingStep}
+                  className="rounded-3xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-blue-600"
+                >
+                  {onboardingStep === onboardingSteps.length - 1 ? 'Start' : 'Next'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
