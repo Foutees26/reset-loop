@@ -22,7 +22,7 @@ export default function WatercolorPlant({ plant, shelf = false, completionKey = 
   const label = growingPlantTypeLabels[plant.type];
   const preparedPlantName = getPreparedPlantName(plant.type);
   const preparedPlantPath = preparedPlantName
-    ? `/prepared plants/${encodeURIComponent(`${preparedPlantName} ${plant.stage + 1}.png`)}`
+    ? `/Prepared Plants/${encodeURIComponent(`${preparedPlantName} ${plant.stage + 1}.png`)}`
     : null;
 
   if (preparedPlantPath) {
