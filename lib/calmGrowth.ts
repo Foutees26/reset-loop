@@ -31,6 +31,8 @@ export const growingPlantTypes = [
   'cactus',
   'aloe',
   'bonsai',
+  'gloxinia',
+  'echeveria-succulent',
   'pine',
   'mini-tree',
 ] as const;
@@ -51,6 +53,8 @@ export const growingPlantTypeLabels: Record<GrowingPlantType, string> = {
   cactus: 'Cactus',
   aloe: 'Aloe',
   bonsai: 'Bonsai',
+  gloxinia: 'Gloxinia',
+  'echeveria-succulent': 'Echeveria Succulent',
   pine: 'Pine tree',
   'mini-tree': 'Mini tree',
 };

@@ -20,6 +20,25 @@ export default function WatercolorPlant({ plant, shelf = false, completionKey = 
   const palette = plantPalette(plant.type);
   const plantId = plant.id.replace(/[^a-zA-Z0-9]/g, '');
   const label = growingPlantTypeLabels[plant.type];
+  const preparedPlantName = getPreparedPlantName(plant.type);
+  const preparedPlantPath = preparedPlantName
+    ? `/prepared plants/${encodeURIComponent(`${preparedPlantName} ${plant.stage + 1}.png`)}`
+    : null;
+
+  if (preparedPlantPath) {
+    return (
+      <motion.img
+        src={preparedPlantPath}
+        role="img"
+        alt={`${label}, ${plant.completed ? 'completed' : 'growing'}`}
+        className={`watercolor-plant ${shelf ? 'watercolor-plant-shelf' : ''} ${className}`}
+        initial={false}
+        animate={completionKey > 0 && plant.completed ? { scale: [1, 1.08, 0.94, 1], y: [34, -14, 0] } : { scale: 1, y: 0 }}
+        transition={{ delay: completionKey > 0 ? 0.2 : 0, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+      />
+    );
+  }
 
   return (
     <motion.svg
@@ -260,10 +279,51 @@ function TreePlant({ plant, plantId, type }: { plant: GrowingPlant; plantId: str
   );
 }
 
+function getPreparedPlantName(type: GrowingPlantType): string | null {
+  switch (type) {
+    case 'fern':
+      return 'fern';
+    case 'pothos':
+      return 'pothos';
+    case 'peace-lily':
+      return 'peace lily';
+    case 'rubber-plant':
+      return 'Rubber Plant';
+    case 'calathea':
+      return 'Calathea';
+    case 'monstera':
+      return 'Monstera';
+    case 'sunflower':
+      return 'sunflower';
+    case 'daisy':
+      return 'daisy';
+    case 'tulip':
+      return 'Tulip';
+    case 'lavender':
+      return 'lavender';
+      case 'cactus':
+      return 'cactus';
+    case 'aloe':
+      return 'aloe';
+    case 'bonsai':
+      return 'Crabapple Bonsai';
+    case 'gloxinia':
+      return 'Gloxinia';
+    case 'echeveria-succulent':
+      return 'Echeveria Succulent';
+    case 'pine':
+      return 'pine';
+    case 'mini-tree':
+      return 'mini-tree';
+    default:
+      return null;
+  }
+}
+
 function plantFamily(type: GrowingPlantType): PlantFamily {
-  if (type === 'cactus' || type === 'aloe') return 'cactus';
+  if (type === 'cactus' || type === 'aloe' || type === 'echeveria-succulent') return 'cactus';
   if (type === 'bonsai' || type === 'pine' || type === 'mini-tree') return 'tree';
-  if (type === 'sunflower' || type === 'daisy' || type === 'tulip' || type === 'lavender') return 'flower';
+  if (type === 'sunflower' || type === 'daisy' || type === 'tulip' || type === 'lavender' || type === 'gloxinia') return 'flower';
   return 'leafy';
 }
 
