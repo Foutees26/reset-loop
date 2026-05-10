@@ -113,7 +113,7 @@ const onboardingSteps = [
   {
     eyebrow: 'Step 2',
     title: 'Pick one job',
-    body: 'Use the suggested reset or tap the logo/shuffle button until one fits.',
+    body: 'Use the suggested reset, pick from the dropdown if you know what you want to do, or tap the logo/shuffle button until one fits.',
   },
   {
     eyebrow: 'Step 3',
@@ -376,6 +376,7 @@ export default function HomePage() {
     [customTasks, selectedEnergy],
   );
   const hasSuggestedTask = customSuggestions.length > 0;
+  const manualTaskValue = customSuggestions.includes(taskText) ? taskText : '';
 
   function applyLoadedProfile(nextProfile: Profile) {
     setProfile(nextProfile);
@@ -430,6 +431,13 @@ export default function HomePage() {
     setTaskText(nextTask);
     setTaskCommitted(false);
     setMessage('Shuffled. Pick the job that fits right now.');
+  }
+
+  function chooseManualTask(nextTask: string) {
+    if (!nextTask) return;
+    setTaskText(nextTask);
+    setTaskCommitted(false);
+    setMessage('Selected. Commit when you are ready to do it.');
   }
 
   function clearRewardTimers() {
@@ -893,6 +901,25 @@ export default function HomePage() {
                 ? 'Your streak is safe. Log another job only if it still feels useful.'
                 : 'This tiny task is designed to feel easy and satisfying right now.'}
           </p>
+          <div className="mt-5">
+            <label htmlFor="manual-task-select" className="text-sm font-semibold text-slate-800">
+              Know what you want to do?
+            </label>
+            <select
+              id="manual-task-select"
+              value={manualTaskValue}
+              onChange={(event) => chooseManualTask(event.target.value)}
+              disabled={loading || !hasSuggestedTask}
+              className="mt-2 w-full rounded-[24px] border border-white/80 bg-white/85 px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              <option value="">Select a {energyLabels[selectedEnergy].toLowerCase()} energy job</option>
+              {customSuggestions.map((suggestion) => (
+                <option key={suggestion} value={suggestion}>
+                  {suggestion}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="space-y-3">
