@@ -30,7 +30,7 @@ export default function CalmGrowthCard({ growth, celebrateKey = 0, className = '
   const jobsToGlow = calmGrowthJobsToNextGlow(normalizedGrowth);
   const stageLabel = calmGrowthStageLabels[stage];
   const plantLabel = growingPlantTypeLabels[currentPlant.type];
-  const helperText = `${jobsToGlow} job${jobsToGlow === 1 ? '' : 's'} to the next growth moment.`;
+  const helperText = `${jobsToGlow} completed job${jobsToGlow === 1 ? '' : 's'} until this plant grows.`;
 
   return (
     <section className={`calm-growth-card rounded-[34px] p-5 ${compact ? 'calm-growth-card-compact' : ''} ${className}`}>
@@ -98,7 +98,7 @@ export default function CalmGrowthCard({ growth, celebrateKey = 0, className = '
           </div>
 
           <p className="mt-3 text-sm text-slate-600">
-            {normalizedGrowth.calm_growth_total} completed job{normalizedGrowth.calm_growth_total === 1 ? '' : 's'} have fed your Growing Space.
+            Each done job feeds the meter. Full plants move to your Calm Space shelf.
           </p>
         </div>
       </div>

@@ -122,11 +122,16 @@ const onboardingSteps = [
   },
   {
     eyebrow: 'Step 4',
+    title: 'Grow your plant',
+    body: 'Each completed job feeds your Growing Space. Every five jobs grows the current plant, and a full plant moves to your Calm Space shelf.',
+  },
+  {
+    eyebrow: 'Step 5',
     title: 'Track how you feel',
     body: 'After the first completed job of the day, a quick check-in can help show your patterns in Progress.',
   },
   {
-    eyebrow: 'Step 5',
+    eyebrow: 'Step 6',
     title: 'Make it yours',
     body: 'Settings lets each account edit, delete, add, and move jobs into the right energy level.',
   },
