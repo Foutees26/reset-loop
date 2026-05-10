@@ -103,7 +103,7 @@ const extraJobRewardMessages = [
   'More momentum today.',
 ];
 
-const onboardingStorageKeyPrefix = 'reset_loop_onboarding_seen_';
+const onboardingStorageKeyPrefix = 'reset_loop_onboarding_seen_v2_';
 const onboardingSteps = [
   {
     eyebrow: 'Step 1',
