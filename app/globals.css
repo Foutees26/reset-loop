@@ -112,11 +112,17 @@ button, input, select {
   overflow: visible;
   width: 132px;
   will-change: transform, opacity;
+  object-fit: contain;
 }
 
 .watercolor-plant-shelf {
-  height: 112px;
-  width: 98px;
+  height: clamp(42px, 12vw, 64px);
+  width: clamp(38px, 10vw, 56px);
+}
+
+.calm-space-scene-immersive .watercolor-plant-shelf {
+  height: clamp(66px, 14vw, 92px);
+  width: clamp(58px, 12vw, 80px);
 }
 
 .calm-space-scene {
@@ -134,7 +140,7 @@ button, input, select {
 }
 
 .calm-space-scene-immersive {
-  min-height: 560px;
+  min-height: 660px;
   padding: 24px 18px 34px;
 }
 
@@ -192,18 +198,19 @@ button, input, select {
 }
 
 .calm-space-scene-immersive .calm-space-current {
-  bottom: 138px;
+  bottom: 492px;
 }
 
 .calm-space-shelf {
   align-items: flex-end;
   border-bottom: 12px solid rgba(154, 101, 61, 0.28);
   bottom: 22px;
-  display: flex;
-  gap: 0;
+  display: grid;
+  gap: 8px 4px;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   left: 18px;
-  min-height: 104px;
-  overflow: hidden;
+  min-height: 78px;
+  overflow: visible;
   padding: 0 8px 6px;
   position: absolute;
   right: 18px;
@@ -211,11 +218,16 @@ button, input, select {
 }
 
 .calm-space-scene-immersive .calm-space-shelf {
-  min-height: 142px;
+  gap: 30px 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-height: 424px;
 }
 
 .calm-space-collected {
-  flex: 0 0 clamp(42px, 11vw, 60px);
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  position: relative;
   transform-origin: center bottom;
   will-change: transform, opacity;
 }
