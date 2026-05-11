@@ -74,7 +74,7 @@ const reminderMessages = [
 
 const motivationalQuotes = [
   'Small steps still count.',
-  'One job is progress.',
+  'One task is progress.',
   'Start tiny, finish lighter.',
   'Your pace is allowed.',
   'A reset can be simple.',
@@ -92,14 +92,14 @@ const rewardMessages = [
   'You did it!',
   'Every reset matters.',
   'Each step is progress.',
-  'Every job helps your streak.',
+  'Every task helps your streak.',
 ];
 
 const extraJobRewardMessages = [
   'Another one done.',
   'Extra win logged.',
   'You kept going.',
-  'That extra job counts.',
+  'That extra task counts.',
   'More momentum today.',
 ];
 
@@ -112,28 +112,28 @@ const onboardingSteps = [
   },
   {
     eyebrow: 'Step 2',
-    title: 'Pick one job',
+    title: 'Pick one task',
     body: 'Use the suggested reset, pick from the dropdown if you know what you want to do, or tap the logo/shuffle button until one fits.',
   },
   {
     eyebrow: 'Step 3',
     title: 'Commit, then finish',
-    body: 'Tap "I\'ll do this" first. After the job is actually done, come back and tap "Done".',
+    body: 'Tap "I\'ll do this" first. After the task is actually done, come back and tap "Done".',
   },
   {
     eyebrow: 'Step 4',
     title: 'Grow your plant',
-    body: 'Each completed job feeds your Growing Space. Every five jobs grows the current plant, and a full plant moves to your Calm Space shelf.',
+    body: 'Each completed task feeds your Growing Space. Every five tasks grows the current plant, and a full plant moves to your Calm Space shelf.',
   },
   {
     eyebrow: 'Step 5',
     title: 'Track how you feel',
-    body: 'After the first completed job of the day, a quick check-in can help show your patterns in Progress.',
+    body: 'After the first completed task of the day, a quick check-in can help show your patterns in Progress.',
   },
   {
     eyebrow: 'Step 6',
     title: 'Make it yours',
-    body: 'Settings lets each account edit, delete, add, and move jobs into the right energy level.',
+    body: 'Settings lets each account edit, delete, add, and move tasks into the right energy level.',
   },
 ];
 
@@ -410,7 +410,7 @@ export default function HomePage() {
     if (availableTasks.length === 0) {
       setTaskText('');
       setTaskCommitted(false);
-      setMessage(`Move or add a ${energyLabels[level].toLowerCase()} energy job in Settings.`);
+      setMessage(`Move or add a ${energyLabels[level].toLowerCase()} energy task in Settings.`);
       return;
     }
     const nextTask = sampleTaskFromList(availableTasks, level);
@@ -425,13 +425,13 @@ export default function HomePage() {
 
   function shuffleTask() {
     if (!hasSuggestedTask) {
-      setMessage(`No ${energyLabels[selectedEnergy].toLowerCase()} energy jobs yet. Move or add one in Settings.`);
+      setMessage(`No ${energyLabels[selectedEnergy].toLowerCase()} energy tasks yet. Move or add one in Settings.`);
       return;
     }
     const nextTask = sampleDifferentTaskFromList(customSuggestions, selectedEnergy, taskText);
     setTaskText(nextTask);
     setTaskCommitted(false);
-    setMessage('Shuffled. Pick the job that fits right now.');
+    setMessage('Shuffled. Pick the task that fits right now.');
   }
 
   function chooseManualTask(nextTask: string) {
@@ -444,14 +444,14 @@ export default function HomePage() {
   function chooseOneOffTask() {
     const nextTask = oneOffTaskText.trim();
     if (!nextTask) {
-      setMessage('Type a one-off job first.');
+      setMessage('Type a one-off task first.');
       return;
     }
 
     setTaskText(nextTask);
     setOneOffTaskText('');
     setTaskCommitted(false);
-    setMessage('One-off job selected. Commit when you are ready to do it.');
+    setMessage('One-off task selected. Commit when you are ready to do it.');
   }
 
   function clearRewardTimers() {
@@ -599,7 +599,7 @@ export default function HomePage() {
 
   function acceptTask() {
     if (!taskText) {
-      setMessage(`No ${energyLabels[selectedEnergy].toLowerCase()} energy job selected. Add or move one in Settings.`);
+      setMessage(`No ${energyLabels[selectedEnergy].toLowerCase()} energy task selected. Add or move one in Settings.`);
       return;
     }
 
@@ -681,7 +681,7 @@ export default function HomePage() {
     if (!userId || loading || !supabase) return;
     if (usedFreeze && completedToday) return;
     if (!usedFreeze && !taskText) {
-      setMessage(`No ${energyLabels[selectedEnergy].toLowerCase()} energy job selected. Add or move one in Settings.`);
+      setMessage(`No ${energyLabels[selectedEnergy].toLowerCase()} energy task selected. Add or move one in Settings.`);
       return;
     }
     const previousStreak = streak;
@@ -716,7 +716,7 @@ export default function HomePage() {
           : growthResult?.didAdvanceStage
             ? 'Reset saved. Your Growing Space moved forward.'
           : completedJobsToday > 0
-            ? 'Another job logged. Good momentum, still gentle.'
+            ? 'Another task logged. Good momentum, still gentle.'
             : 'Reset complete. Your streak just grew - nice work.',
       );
       if (savedReset) {
@@ -801,7 +801,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="reward-impact-item reward-impact-item-positive">
-                <span className="reward-impact-label">Jobs today</span>
+                <span className="reward-impact-label">Tasks today</span>
                 <div className="reward-streak-row">
                   {reward.previousJobsToday > 0 && <span className="reward-streak-old">{reward.previousJobsToday}</span>}
                   <span className="reward-job-number">{reward.nextJobsToday}</span>
@@ -842,7 +842,7 @@ export default function HomePage() {
               <p className={`mt-1 text-2xl font-semibold text-white ${rewardActive ? 'streak-number-roll' : ''}`}>
                 {displayedStreak} day{displayedStreak === 1 ? '' : 's'}
               </p>
-              <p className="mt-1 text-xs text-cyan-100/75">{completedJobsToday} job{completedJobsToday === 1 ? '' : 's'} today</p>
+              <p className="mt-1 text-xs text-cyan-100/75">{completedJobsToday} task{completedJobsToday === 1 ? '' : 's'} today</p>
             </div>
             <div className="rounded-3xl bg-white px-4 py-3 text-slate-900 shadow-sm">
               <p className="text-xs text-slate-500">Freezes left</p>
@@ -896,8 +896,8 @@ export default function HomePage() {
               onClick={shuffleTask}
               disabled={loading}
               className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[22px] transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60 ${energyStyles[selectedEnergy].badge}`}
-              aria-label="Shuffle job"
-              title="Shuffle job"
+              aria-label="Shuffle task"
+              title="Shuffle task"
             >
               <Image
                 src="/logos/Logo%20only.png"
@@ -910,9 +910,9 @@ export default function HomePage() {
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-600">
             {taskCommitted
-              ? 'Chosen. Mark it done when the job is actually finished.'
+              ? 'Chosen. Mark it done when the task is actually finished.'
               : completedJobsToday > 0
-                ? 'Your streak is safe. Log another job only if it still feels useful.'
+                ? 'Your streak is safe. Log another task only if it still feels useful.'
                 : 'This tiny task is designed to feel easy and satisfying right now.'}
           </p>
           <div className="mt-5">
@@ -926,7 +926,7 @@ export default function HomePage() {
               disabled={loading || !hasSuggestedTask}
               className="mt-2 w-full rounded-[24px] border border-white/80 bg-white/85 px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
             >
-              <option value="">Select a {energyLabels[selectedEnergy].toLowerCase()} energy job</option>
+              <option value="">Select a {energyLabels[selectedEnergy].toLowerCase()} energy task</option>
               {customSuggestions.map((suggestion) => (
                 <option key={suggestion} value={suggestion}>
                   {suggestion}
@@ -944,7 +944,7 @@ export default function HomePage() {
             className="inline-flex w-full items-center justify-center gap-2 rounded-[26px] border border-white/75 bg-white/80 px-5 py-4 text-base font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:border-primary/40 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Shuffle className="h-5 w-5" />
-            Shuffle job
+            Shuffle task
           </button>
           <button
             type="button"
@@ -960,7 +960,7 @@ export default function HomePage() {
           </button>
           <div className="rounded-[28px] border border-white/75 bg-white/75 p-3 shadow-sm backdrop-blur">
             <label htmlFor="one-off-task" className="text-sm font-semibold text-slate-800">
-              One-off job
+              One-off task
             </label>
             <div className="mt-2 flex flex-col gap-2 sm:flex-row">
               <input
@@ -972,7 +972,7 @@ export default function HomePage() {
                   if (event.key === 'Enter') chooseOneOffTask();
                 }}
                 disabled={loading}
-                placeholder="Type a job for today"
+                placeholder="Type a task for today"
                 className="min-w-0 flex-1 rounded-[22px] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:bg-slate-100"
               />
               <button

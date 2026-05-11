@@ -17,8 +17,8 @@ Reset Loop is a mobile-first Next.js MVP for low-energy daily resets. It helps u
 - `/settings` reminder settings
 - Optional post-reset check-in modal
 - Check-in trend graph for mood, energy, and pain
-- Multiple job entries per day
-- Custom job list that feeds future suggestions
+- Multiple task entries per day
+- Custom task list that feeds future suggestions
 - Supabase schema in `supabase/schema.sql`
 
 ## Setup

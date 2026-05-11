@@ -56,7 +56,7 @@ export default function OpeningPage() {
             <h1 className="mt-3 text-4xl font-semibold leading-tight text-white sm:text-5xl">Sign in to your reset space</h1>
           </div>
         </div>
-        <p className="mt-5 text-center text-base leading-7 text-white/80">Choose an account on this device or create one for a separate streak, jobs list, check-ins, and progress.</p>
+        <p className="mt-5 text-center text-base leading-7 text-white/80">Choose an account on this device or create one for a separate streak, tasks list, check-ins, and progress.</p>
       </section>
 
       <section className="app-card rounded-[34px] p-5">

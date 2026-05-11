@@ -111,7 +111,7 @@ export default function SettingsPage() {
         const expandedTasks = await seedExpandedDefaultJobs(client, loadedTasks);
         setCustomTasks(expandedTasks);
       }
-      if (tasksError) setStatus('Unable to load your job list. Check the Supabase schema and connection.');
+      if (tasksError) setStatus('Unable to load your task list. Check the Supabase schema and connection.');
     }
     loadProfile();
   }, [userId]);
@@ -130,7 +130,7 @@ export default function SettingsPage() {
     if (tasksToSeed.length > 0) {
       const { data, error } = await client.from('custom_tasks').insert(tasksToSeed).select();
       if (error) {
-        setStatus(error.message || 'Unable to seed your editable job list.');
+        setStatus(error.message || 'Unable to seed your editable task list.');
         return currentTasks;
       }
       nextTasks = [...((data ?? []) as CustomTask[]), ...currentTasks];
@@ -164,12 +164,12 @@ export default function SettingsPage() {
 
     const { data, error } = await client.from('custom_tasks').insert(tasksToSeed).select();
     if (error) {
-      setStatus(error.message || 'Unable to add the expanded default jobs.');
+      setStatus(error.message || 'Unable to add the expanded default tasks.');
       return currentTasks;
     }
 
     window.localStorage.setItem(storageKey, 'true');
-    setStatus('Expanded job list added. Each energy level now has 20 default jobs.');
+    setStatus('Expanded task list added. Each energy level now has 20 default tasks.');
     return [...((data ?? []) as CustomTask[]), ...currentTasks];
   }
 
@@ -265,12 +265,12 @@ export default function SettingsPage() {
     const trimmedTask = newTaskText.trim();
     if (!trimmedTask || !userId || !supabase) return;
     if (isDuplicateTask) {
-      setStatus('That job is already in the suggestion list.');
+      setStatus('That task is already in the suggestion list.');
       return;
     }
 
     const client = supabase;
-    setStatus('Saving job...');
+    setStatus('Saving task...');
     const profileReady = await ensureProfile(client);
     if (!profileReady) return;
 
@@ -281,19 +281,19 @@ export default function SettingsPage() {
       .single();
 
     if (error) {
-      setStatus(error.message || 'Unable to save job. Please try again.');
+      setStatus(error.message || 'Unable to save task. Please try again.');
       return;
     }
 
     if (data) setCustomTasks((currentTasks) => [data as CustomTask, ...currentTasks]);
     setNewTaskText('');
-    setStatus('Job added. It can now appear in future suggestions.');
+    setStatus('Task added. It can now appear in future suggestions.');
   }
 
   async function deleteCustomTask(taskId: string) {
     if (!supabase) return;
     const taskToDelete = customTasks.find((task) => task.id === taskId);
-    const confirmed = window.confirm(`Delete "${taskToDelete?.task_text ?? 'this job'}" from the suggestion list?`);
+    const confirmed = window.confirm(`Delete "${taskToDelete?.task_text ?? 'this task'}" from the suggestion list?`);
     if (!confirmed) return;
 
     const client = supabase;
@@ -303,17 +303,17 @@ export default function SettingsPage() {
       .eq('id', taskId)
       .select('id');
     if (error) {
-      setStatus(error.message || 'Unable to remove job. Please try again.');
+      setStatus(error.message || 'Unable to remove task. Please try again.');
       return;
     }
 
     if (!data || data.length === 0) {
-      setStatus('Unable to remove job. Run the latest Supabase SQL so the job delete policy is active, then try again.');
+      setStatus('Unable to remove task. Run the latest Supabase SQL so the task delete policy is active, then try again.');
       return;
     }
 
     setCustomTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId));
-    setStatus('Job removed from future suggestions.');
+    setStatus('Task removed from future suggestions.');
   }
 
   function startEditingTask(task: CustomTask) {
@@ -333,7 +333,7 @@ export default function SettingsPage() {
     const trimmedTask = editingTaskText.trim();
     if (!editingTaskId || !trimmedTask || !supabase) return;
     if (isDuplicateEditingTask) {
-      setStatus('That job is already in the suggestion list.');
+      setStatus('That task is already in the suggestion list.');
       return;
     }
 
@@ -346,7 +346,7 @@ export default function SettingsPage() {
       .single();
 
     if (error) {
-      setStatus(error.message || 'Unable to update job. Please try again.');
+      setStatus(error.message || 'Unable to update task. Please try again.');
       return;
     }
 
@@ -356,7 +356,7 @@ export default function SettingsPage() {
       )));
     }
     cancelEditingTask();
-    setStatus('Job updated.');
+    setStatus('Task updated.');
   }
 
   async function moveTaskToEnergy(taskId: string, energyLevel: EnergyLevel) {
@@ -375,7 +375,7 @@ export default function SettingsPage() {
       .single();
 
     if (error) {
-      setStatus(error.message || 'Unable to move job. Please try again.');
+      setStatus(error.message || 'Unable to move task. Please try again.');
       setDraggingTaskId(null);
       return;
     }
@@ -386,7 +386,7 @@ export default function SettingsPage() {
       )));
     }
     setDraggingTaskId(null);
-    setStatus(`Moved job to ${energyLabels[energyLevel]} energy.`);
+    setStatus(`Moved task to ${energyLabels[energyLevel]} energy.`);
   }
 
   if (!supabase) {
@@ -425,7 +425,7 @@ export default function SettingsPage() {
             <Users className="h-5 w-5" />
           </div>
         </div>
-        <p className="text-sm leading-6 text-slate-600">Each user gets their own streak, jobs, check-ins, and progress on this device.</p>
+        <p className="text-sm leading-6 text-slate-600">Each user gets their own streak, tasks, check-ins, and progress on this device.</p>
 
         <div className="mt-4 space-y-2">
           {browserUsers.map((user) => (
@@ -501,9 +501,9 @@ export default function SettingsPage() {
 
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">
         <div className="mb-4">
-          <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Jobs</p>
+          <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Tasks</p>
           <h2 className="mt-1 text-xl font-semibold text-slate-950">Suggestion list</h2>
-          <p className="mt-2 text-sm text-slate-600">Edit any job, delete jobs you do not want, or drag a job into the energy level that fits you.</p>
+          <p className="mt-2 text-sm text-slate-600">Edit any task, delete tasks you do not want, or drag a task into the energy level that fits you.</p>
         </div>
 
         <div className="space-y-3">
@@ -511,11 +511,11 @@ export default function SettingsPage() {
             type="text"
             value={newTaskText}
             onChange={(event) => setNewTaskText(event.target.value)}
-            placeholder="Add a job, e.g. Empty bathroom bin"
+            placeholder="Add a task, e.g. Empty bathroom bin"
             className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10"
           />
           {isDuplicateTask && (
-            <p className="rounded-3xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">That job is already listed.</p>
+            <p className="rounded-3xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">That task is already listed.</p>
           )}
           <div className="grid grid-cols-3 gap-2">
             {(['low', 'medium', 'high'] as EnergyLevel[]).map((level) => (
@@ -540,7 +540,7 @@ export default function SettingsPage() {
             className="inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-primary px-5 py-4 text-base font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             <Plus className="h-5 w-5" />
-            Add job
+            Add task
           </button>
         </div>
 
@@ -561,12 +561,12 @@ export default function SettingsPage() {
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h3 className="text-base font-semibold text-slate-950">{energyLabels[level]} energy</h3>
                   <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm">
-                    {customTasksForLevel.length} jobs
+                    {customTasksForLevel.length} task{customTasksForLevel.length === 1 ? '' : 's'}
                   </span>
                 </div>
                 <div className="space-y-2">
                   {customTasksForLevel.length === 0 && (
-                    <p className="rounded-3xl bg-white p-3 text-sm text-slate-600">Drop jobs here to use them as {energyLabels[level].toLowerCase()} energy suggestions.</p>
+                    <p className="rounded-3xl bg-white p-3 text-sm text-slate-600">Drop tasks here to use them as {energyLabels[level].toLowerCase()} energy suggestions.</p>
                   )}
                   {customTasksForLevel.map((task) => (
                     <div
@@ -585,7 +585,7 @@ export default function SettingsPage() {
                             className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                           />
                           {isDuplicateEditingTask && (
-                            <p className="text-sm font-medium text-slate-600">That job is already listed.</p>
+                            <p className="text-sm font-medium text-slate-600">That task is already listed.</p>
                           )}
                           <div className="grid grid-cols-3 gap-2">
                             {(['low', 'medium', 'high'] as EnergyLevel[]).map((editLevel) => (
@@ -627,7 +627,7 @@ export default function SettingsPage() {
                         <>
                           <div>
                             <p className="text-sm font-semibold text-slate-900">{task.task_text}</p>
-                            <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">Editable job</p>
+                            <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">Editable task</p>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-400" aria-hidden="true">
