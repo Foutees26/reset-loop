@@ -175,6 +175,7 @@ export default function HomePage() {
   const [customTasks, setCustomTasks] = useState<CustomTask[]>([]);
   const [selectedEnergy, setSelectedEnergy] = useState<EnergyLevel>('low');
   const [taskText, setTaskText] = useState<string>(() => defaultTask('low'));
+  const [oneOffTaskText, setOneOffTaskText] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string>('Pick your energy level and settle into a tiny reset.');
   const [showCheckIn, setShowCheckIn] = useState(false);
@@ -438,6 +439,19 @@ export default function HomePage() {
     setTaskText(nextTask);
     setTaskCommitted(false);
     setMessage('Selected. Commit when you are ready to do it.');
+  }
+
+  function chooseOneOffTask() {
+    const nextTask = oneOffTaskText.trim();
+    if (!nextTask) {
+      setMessage('Type a one-off job first.');
+      return;
+    }
+
+    setTaskText(nextTask);
+    setOneOffTaskText('');
+    setTaskCommitted(false);
+    setMessage('One-off job selected. Commit when you are ready to do it.');
   }
 
   function clearRewardTimers() {
@@ -935,7 +949,7 @@ export default function HomePage() {
           <button
             type="button"
             onClick={handlePrimaryTaskAction}
-            disabled={loading || !hasSuggestedTask || !taskText}
+            disabled={loading || !taskText}
             className={`inline-flex w-full items-center justify-center rounded-[26px] px-5 py-4 text-base font-semibold text-white shadow-lg transition disabled:cursor-not-allowed disabled:bg-slate-300 ${
               taskCommitted
                 ? 'bg-positive shadow-positive/25 hover:bg-emerald-600'
@@ -944,6 +958,33 @@ export default function HomePage() {
           >
             {loading ? 'Saving...' : taskCommitted ? 'Done' : completedJobsToday > 0 ? "I'll do another" : "I'll do this"}
           </button>
+          <div className="rounded-[28px] border border-white/75 bg-white/75 p-3 shadow-sm backdrop-blur">
+            <label htmlFor="one-off-task" className="text-sm font-semibold text-slate-800">
+              One-off job
+            </label>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <input
+                id="one-off-task"
+                type="text"
+                value={oneOffTaskText}
+                onChange={(event) => setOneOffTaskText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') chooseOneOffTask();
+                }}
+                disabled={loading}
+                placeholder="Type a job for today"
+                className="min-w-0 flex-1 rounded-[22px] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:bg-slate-100"
+              />
+              <button
+                type="button"
+                onClick={chooseOneOffTask}
+                disabled={loading || oneOffTaskText.trim().length === 0}
+                className="rounded-[22px] bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                Use this
+              </button>
+            </div>
+          </div>
           <button
             type="button"
             onClick={() => saveReset(true)}
