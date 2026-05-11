@@ -123,7 +123,7 @@ const onboardingSteps = [
   {
     eyebrow: 'Step 4',
     title: 'Enjoy your space',
-    body: 'Small tasks come together over time. As they add up, your Calm Space fills with reminders of what you have done.',
+    body: 'Each completed task waters your plant a little. Over time, small actions come together and your Calm Space fills with reminders of what you have done.',
   },
   {
     eyebrow: 'Step 5',
@@ -714,7 +714,7 @@ export default function HomePage() {
         usedFreeze
           ? 'Nice choice. Your streak is protected while you rest today.'
           : growthResult?.didAdvanceStage
-            ? 'Reset saved. Small tasks are adding up.'
+            ? 'Reset saved. You watered your plant.'
           : completedJobsToday > 0
             ? 'Another task logged. Good momentum, still gentle.'
             : 'Reset complete. Your streak just grew - nice work.',

@@ -30,7 +30,7 @@ export default function CalmGrowthCard({ growth, celebrateKey = 0, className = '
   const jobsToGlow = calmGrowthJobsToNextGlow(normalizedGrowth);
   const stageLabel = calmGrowthStageLabels[stage];
   const plantLabel = growingPlantTypeLabels[currentPlant.type];
-  const helperText = `${jobsToGlow} completed task${jobsToGlow === 1 ? '' : 's'} until the next little change.`;
+  const helperText = `${jobsToGlow} completed task${jobsToGlow === 1 ? '' : 's'} until your plant gets its next little change.`;
 
   return (
     <section className={`calm-growth-card rounded-[34px] p-5 ${compact ? 'calm-growth-card-compact' : ''} ${className}`}>
@@ -98,7 +98,7 @@ export default function CalmGrowthCard({ growth, celebrateKey = 0, className = '
           </div>
 
           <p className="mt-3 text-sm text-slate-600">
-            Small tasks add up here. Enjoy the space you are building.
+            Each task waters your plant a little. Small actions come together here.
           </p>
         </div>
       </div>
