@@ -1,7 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { normalizeCalmGrowth, type CalmGrowthSource } from '../lib/calmGrowth';
+import {
+  calmGrowthStageLabels,
+  growingPlantTypeLabels,
+  normalizeCalmGrowth,
+  type CalmGrowthSource,
+  type GrowingPlant,
+} from '../lib/calmGrowth';
 import WatercolorPlant from './WatercolorPlant';
 
 interface GrowingSpaceSceneProps {
@@ -16,6 +23,8 @@ export default function GrowingSpaceScene({ growth, celebrateKey = 0, showCurren
   const normalizedGrowth = normalizeCalmGrowth(growth);
   const completedPlants = normalizedGrowth.completed_plants;
   const lastCompletedPlantId = completedPlants[completedPlants.length - 1]?.id;
+  const [previewPlant, setPreviewPlant] = useState<GrowingPlant | null>(null);
+  const canPreviewPlants = immersive;
 
   function hashString(value: string) {
     let hash = 0;
@@ -66,51 +75,104 @@ export default function GrowingSpaceScene({ growth, celebrateKey = 0, showCurren
     return -4 + (seed % 9);
   }
 
+  function openPlantPreview(plant: GrowingPlant) {
+    if (!canPreviewPlants) return;
+    setPreviewPlant(plant);
+  }
+
   return (
-    <div className={`calm-space-scene ${immersive ? 'calm-space-scene-immersive' : ''} ${className}`}>
-      <div className="calm-space-wash calm-space-wash-one" />
-      <div className="calm-space-wash calm-space-wash-two" />
-      <div className="calm-space-window-frame" aria-hidden="true" />
+    <>
+      <div className={`calm-space-scene ${immersive ? 'calm-space-scene-immersive' : ''} ${className}`}>
+        <div className="calm-space-wash calm-space-wash-one" />
+        <div className="calm-space-wash calm-space-wash-two" />
+        <div className="calm-space-window-frame" aria-hidden="true" />
 
-      {showCurrent && (
-        <motion.div
-          className="calm-space-current"
-          key={`${normalizedGrowth.current_plant.id}-${normalizedGrowth.current_plant.stage}`}
-          initial={{ opacity: 0, scale: 0.8, y: 20 }}
-          animate={{ opacity: 1, scale: getPlantScale(normalizedGrowth.current_plant.type, normalizedGrowth.current_plant.id), y: 0 }}
-          transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <WatercolorPlant plant={normalizedGrowth.current_plant} />
-        </motion.div>
-      )}
-
-      <div className="calm-space-shelf">
-        {completedPlants.length === 0 ? (
-          <p className="calm-space-empty">Completed plants will settle here.</p>
-        ) : (
-          completedPlants.slice(immersive ? -14 : -8).map((plant, index) => {
-            const scale = getPlantScale(plant.type, plant.id);
-            const rotation = getPlantRotation(plant.id, index);
-            const isNewest = plant.id === lastCompletedPlantId && celebrateKey > 0;
-
-            return (
-              <motion.div
-                key={plant.id}
-                className="calm-space-collected"
-                initial={isNewest
-                  ? { opacity: 0, x: -24, y: 84, scale: 1.04, rotate: 0 }
-                  : { opacity: 0, y: 28, scale: scale * 0.9, rotate: rotation }}
-                animate={isNewest
-                  ? { opacity: 1, x: [0, 10, 0], y: [42, -14, 0], scale: [1.05, 0.9, scale, scale * 1.05, scale], rotate: rotation }
-                  : { opacity: 1, y: 0, scale, rotate: rotation }}
-                transition={{ delay: isNewest ? 0.2 : index * 0.035, duration: isNewest ? 1.1 : 0.58, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <WatercolorPlant plant={plant} shelf completionKey={isNewest ? celebrateKey : 0} />
-              </motion.div>
-            );
-          })
+        {showCurrent && (
+          <motion.button
+            type="button"
+            className={`calm-space-current ${canPreviewPlants ? 'calm-space-plant-button' : ''}`}
+            key={`${normalizedGrowth.current_plant.id}-${normalizedGrowth.current_plant.stage}`}
+            onClick={() => openPlantPreview(normalizedGrowth.current_plant)}
+            disabled={!canPreviewPlants}
+            aria-label={`View ${growingPlantTypeLabels[normalizedGrowth.current_plant.type]}`}
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: getPlantScale(normalizedGrowth.current_plant.type, normalizedGrowth.current_plant.id), y: 0 }}
+            transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <WatercolorPlant plant={normalizedGrowth.current_plant} />
+          </motion.button>
         )}
+
+        <div className="calm-space-shelf">
+          {completedPlants.length === 0 ? (
+            <p className="calm-space-empty">Completed plants will settle here.</p>
+          ) : (
+            completedPlants.slice(immersive ? -14 : -8).map((plant, index) => {
+              const scale = getPlantScale(plant.type, plant.id);
+              const rotation = getPlantRotation(plant.id, index);
+              const isNewest = plant.id === lastCompletedPlantId && celebrateKey > 0;
+
+              return (
+                <motion.button
+                  key={plant.id}
+                  type="button"
+                  className={`calm-space-collected ${canPreviewPlants ? 'calm-space-plant-button' : ''}`}
+                  onClick={() => openPlantPreview(plant)}
+                  disabled={!canPreviewPlants}
+                  aria-label={`View ${growingPlantTypeLabels[plant.type]}`}
+                  initial={isNewest
+                    ? { opacity: 0, x: -24, y: 84, scale: 1.04, rotate: 0 }
+                    : { opacity: 0, y: 28, scale: scale * 0.9, rotate: rotation }}
+                  animate={isNewest
+                    ? { opacity: 1, x: [0, 10, 0], y: [42, -14, 0], scale: [1.05, 0.9, scale, scale * 1.05, scale], rotate: rotation }
+                    : { opacity: 1, y: 0, scale, rotate: rotation }}
+                  transition={{ delay: isNewest ? 0.2 : index * 0.035, duration: isNewest ? 1.1 : 0.58, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <WatercolorPlant plant={plant} shelf completionKey={isNewest ? celebrateKey : 0} />
+                </motion.button>
+              );
+            })
+          )}
+        </div>
       </div>
-    </div>
+
+      {previewPlant && (
+        <div
+          className="calm-space-preview-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="calm-space-preview-title"
+          onClick={() => setPreviewPlant(null)}
+        >
+          <motion.div
+            className="calm-space-preview"
+            initial={{ opacity: 0, scale: 0.92, y: 18 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="calm-space-preview-close"
+              onClick={() => setPreviewPlant(null)}
+              aria-label="Close plant preview"
+            >
+              Close
+            </button>
+            <div className="calm-space-preview-plant" aria-hidden="true">
+              <WatercolorPlant plant={previewPlant} />
+            </div>
+            <div className="mt-4 text-center">
+              <p id="calm-space-preview-title" className="text-2xl font-semibold text-slate-950">
+                {growingPlantTypeLabels[previewPlant.type]}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-emerald-700">
+                {previewPlant.completed ? 'Completed plant' : calmGrowthStageLabels[previewPlant.stage]}
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </>
   );
 }
