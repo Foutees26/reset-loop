@@ -13,7 +13,7 @@ export const calmGrowthMessages = [
   'You did it!',
   'Even small actions make a difference.',
   'Small steps count.',
-  'Your calm grew a little.',
+  'Small actions add up.',
   'That reset helped.',
 ];
 
@@ -240,9 +240,9 @@ export function advanceCalmGrowth(current: CalmGrowthSource): CalmGrowthAdvance 
     completed_plants: completedPlants,
   };
   const message = completedPlant
-    ? 'A plant joined your Growing Space.'
+    ? 'Your Calm Space has something new.'
     : didAdvanceStage
-      ? 'Your plant grew.'
+      ? 'Small tasks are adding up.'
     : calmGrowthMessages[next.calm_growth_total % calmGrowthMessages.length];
 
   return {

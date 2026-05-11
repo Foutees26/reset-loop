@@ -122,8 +122,8 @@ const onboardingSteps = [
   },
   {
     eyebrow: 'Step 4',
-    title: 'Grow your plant',
-    body: 'Each completed task feeds your Growing Space. Every five tasks grows the current plant, and a full plant moves to your Calm Space shelf.',
+    title: 'Enjoy your space',
+    body: 'Small tasks come together over time. As they add up, your Calm Space fills with reminders of what you have done.',
   },
   {
     eyebrow: 'Step 5',
@@ -714,7 +714,7 @@ export default function HomePage() {
         usedFreeze
           ? 'Nice choice. Your streak is protected while you rest today.'
           : growthResult?.didAdvanceStage
-            ? 'Reset saved. Your Growing Space moved forward.'
+            ? 'Reset saved. Small tasks are adding up.'
           : completedJobsToday > 0
             ? 'Another task logged. Good momentum, still gentle.'
             : 'Reset complete. Your streak just grew - nice work.',

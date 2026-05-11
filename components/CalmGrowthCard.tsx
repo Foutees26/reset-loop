@@ -30,13 +30,13 @@ export default function CalmGrowthCard({ growth, celebrateKey = 0, className = '
   const jobsToGlow = calmGrowthJobsToNextGlow(normalizedGrowth);
   const stageLabel = calmGrowthStageLabels[stage];
   const plantLabel = growingPlantTypeLabels[currentPlant.type];
-  const helperText = `${jobsToGlow} completed task${jobsToGlow === 1 ? '' : 's'} until this plant grows.`;
+  const helperText = `${jobsToGlow} completed task${jobsToGlow === 1 ? '' : 's'} until the next little change.`;
 
   return (
     <section className={`calm-growth-card rounded-[34px] p-5 ${compact ? 'calm-growth-card-compact' : ''} ${className}`}>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-700">Growing Space</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-700">Your Space</p>
           <h2 className="mt-1 text-2xl font-semibold text-slate-950">{stageLabel}</h2>
           <p className="mt-1 text-sm font-semibold text-emerald-800/80">{plantLabel}</p>
         </div>
@@ -68,7 +68,7 @@ export default function CalmGrowthCard({ growth, celebrateKey = 0, className = '
         <div>
           <div className="flex items-end justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-slate-900">Calm meter</p>
+              <p className="text-sm font-semibold text-slate-900">Progress</p>
               <p className="mt-1 text-sm text-slate-600">{helperText}</p>
             </div>
             <p className="shrink-0 text-sm font-bold text-emerald-700">
@@ -98,7 +98,7 @@ export default function CalmGrowthCard({ growth, celebrateKey = 0, className = '
           </div>
 
           <p className="mt-3 text-sm text-slate-600">
-            Each done task feeds the meter. Full plants move to your Calm Space shelf.
+            Small tasks add up here. Enjoy the space you are building.
           </p>
         </div>
       </div>

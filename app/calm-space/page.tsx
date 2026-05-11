@@ -54,7 +54,7 @@ export default function CalmSpacePage() {
         setGrowth(normalizeCalmGrowth(data as Profile));
         setStatus('');
       } else if (error) {
-        setStatus('Complete a reset first and your Calm Space will start growing here.');
+        setStatus('Complete a reset first and your Calm Space will start filling in.');
       }
       setLoading(false);
     }
@@ -73,8 +73,8 @@ export default function CalmSpacePage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-700">Calm Space</p>
-            <h1 className="mt-2 text-3xl font-semibold leading-tight sm:text-4xl">Your peaceful growing shelf</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-700">Every completed task feeds your current plant. After enough growth, the finished plant settles here and a new one starts.</p>
+            <h1 className="mt-2 text-3xl font-semibold leading-tight sm:text-4xl">Enjoy your peaceful shelf</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-700">Small tasks come together here. Each completed reset adds to the space, turning little wins into something you can see.</p>
           </div>
           <div className="rounded-[24px] bg-white/70 p-3 text-emerald-700 shadow-sm">
             <Flower2 className="h-6 w-6" />
@@ -98,9 +98,9 @@ export default function CalmSpacePage() {
           <p className="mt-1 text-sm text-slate-600">Finished by completing tasks.</p>
         </div>
         <div className="app-card rounded-[30px] p-5">
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Next growth</p>
+          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Next change</p>
           <p className="mt-2 text-xl font-semibold text-slate-950">{jobsToNext} task{jobsToNext === 1 ? '' : 's'}</p>
-          <p className="mt-1 text-sm text-slate-600">Complete tasks to grow this plant.</p>
+          <p className="mt-1 text-sm text-slate-600">Small tasks add up to bigger results.</p>
         </div>
       </section>
 
